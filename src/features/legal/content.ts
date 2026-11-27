@@ -3,7 +3,7 @@ import type { LegalSection } from "./legal-page";
 /* Textos PROVISÓRIOS — devem ser revisados por advogado antes do lançamento. */
 
 export const UPDATED_AT = "27/11/2026";
-export const SUPPORT_EMAIL = "suporte@repassaai.com.br"; // provisório — confirmar domínio e caixa de e-mail
+export const SUPPORT_EMAIL = "ocivancomercial@gmail.com"; // provisório — trocar pelo e-mail do domínio próprio no lançamento
 
 export const TERMS: LegalSection[] = [
   { title: "Sobre a plataforma", paragraphs: [

@@ -59,7 +59,7 @@ export class MelhorEnvioProvider implements ShippingProvider {
       apiUrl,
       clientId: e.MELHORENVIO_CLIENT_ID,
       clientSecret: e.MELHORENVIO_CLIENT_SECRET,
-      userAgent: e.MELHORENVIO_USER_AGENT || "Repassa Ai (suporte@repassaai.com.br)",
+      userAgent: e.MELHORENVIO_USER_AGENT || "Repassa Ai (ocivancomercial@gmail.com)",
       staticToken: e.MELHORENVIO_TOKEN || undefined,
       isMock: !/^https:\/\/(sandbox\.)?melhorenvio\.com\.br$/.test(apiUrl),
     });

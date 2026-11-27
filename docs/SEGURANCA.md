@@ -45,7 +45,7 @@
 
 ## Relato de vulnerabilidades
 
-Canal provisório: suporte@repassaai.com.br (a confirmar).
+Canal provisório: ocivancomercial@gmail.com (trocar pelo e-mail do domínio próprio no lançamento).
 
 ## Etapa 6
 
