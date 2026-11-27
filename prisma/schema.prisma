@@ -423,8 +423,13 @@ model Order {
   shippingStatus      ShippingStatus @default(NOT_STARTED)
   shippingServiceId   String?
   shippingServiceName String?
+  // Prazo para pagar (= expiração da reserva). Depois disso o pedido é cancelado e a peça liberada.
+  expiresAt           DateTime?
   paidAt              DateTime?
+  shippedAt           DateTime?
+  deliveredAt         DateTime?
   canceledAt          DateTime?
+  cancelReason        String?
   completedAt         DateTime?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
@@ -443,6 +448,7 @@ model Order {
   @@index([buyerId, createdAt(sort: Desc)])
   @@index([sellerId, createdAt(sort: Desc)])
   @@index([status])
+  @@index([status, expiresAt])
   @@map("orders")
 }
 
@@ -696,4 +702,19 @@ model DataRequest {
 
   @@index([status])
   @@map("data_requests")
+}
+
+// "Banco de dados" do provedor de pagamento SIMULADO (apenas desenvolvimento/homologação).
+// Mantido separado de `payments` para que a confirmação siga o mesmo caminho do provedor real:
+// webhook → consulta ao provedor → atualização do pedido.
+model SimulatedPayment {
+  id          String        @id @default(cuid())
+  externalRef String // id do pedido
+  amountCents Int
+  status      PaymentStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([externalRef])
+  @@map("simulated_payments")
 }

@@ -32,11 +32,24 @@ Storage (local/Supabase) com validação e reencode de imagens · criar anúncio
 moderação opcional · busca full-text + filtros reais + distância · página do produto · favoritos · foto de perfil · anúncios de exemplo (marcados) ·
 assistente de anúncio por IA (interface desacoplada, opcional).
 
-## Etapa 4 — Operação comercial
+## Etapa 4 — Operação comercial ✅
+- Carrinho agrupado por vendedor (um pedido por vendedor); bloqueia o próprio anúncio, exemplos e itens indisponíveis.
+- Checkout: endereço, frete cotado **no servidor** (provedor simulado), cupom, reserva temporária configurável com `SELECT … FOR UPDATE` + índice único (testado com dois compradores simultâneos).
+- Pedidos: código legível (RA-XXXXXX), snapshot de endereço e itens, máquina de estados, cancelamento, envio com rastreio, confirmação de recebimento, disputa, avaliações mútuas.
+- Pagamento: `PaymentProvider` + provedor **simulado** com webhook assinado (HMAC) e confirmação consultando o provedor; idempotência por evento; valor divergente nunca libera; pagamento tardio é estornado; chargeback abre disputa.
+- Painel do vendedor: anúncios, vendidos, a enviar, pedidos, valor líquido estimado, histórico de transações, avaliações.
+- Notificações internas (sininho) e contador do carrinho.
+- Admin completo: dashboard, usuários (suspender/reativar), fila de moderação, pedidos (reembolso/disputa), pagamentos e webhooks, denúncias, categorias, marcas, cupons, configurações (comissão, reserva, moderação) com histórico, relatórios (GMV real × simulado).
+- Rotina de expiração de reservas (`/api/cron/release-reservations` + `vercel.json`).
+- 162 testes.
+
+### Planejado originalmente para a Etapa 4
 Carrinho (um vendedor por pedido) · reserva temporária com expiração · checkout · pedidos · comissão · painel do vendedor ·
 admin completo (usuários, anúncios, pedidos, pagamentos, denúncias, categorias, marcas, cupons, configurações, relatórios) · avaliações.
 
-## Etapa 5 — Integrações
+## Etapa 5 — Integrações (próxima)
+Substituir os provedores simulados por implementações reais atrás das mesmas interfaces (`MercadoPagoProvider`, `MelhorEnvioProvider`), OAuth de vendedores, split, geração de etiqueta e rastreio automático.
+
 `PaymentProvider` (Mercado Pago Marketplace: OAuth, checkout, split, webhooks, reembolso, chargeback) ·
 `ShippingProvider` (Melhor Envio: CEP, cotação, etiqueta, rastreio, cancelamento). Simulação clara em dev.
 

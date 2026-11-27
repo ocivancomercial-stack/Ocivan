@@ -32,3 +32,4 @@ DATABASE_URL=... npm run admin:promote -- voce@empresa.com.br
 - [ ] Credenciais de produção do Mercado Pago e Melhor Envio homologadas (Etapa 5)
 - [ ] Textos legais revisados por advogado
 - [ ] Backups automáticos do banco habilitados
+- [ ] `CRON_SECRET` definido (o `vercel.json` agenda a liberação de reservas vencidas a cada 5 minutos; em planos sem cron frequente, as reservas também são liberadas a cada novo checkout)

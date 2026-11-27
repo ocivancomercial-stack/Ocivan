@@ -21,6 +21,7 @@ PostgreSQL + Prisma. Schema em `prisma/schema.prisma`; migrations em `prisma/mig
 | Logística | `shipments`, `shipment_events` |
 | Pós-venda | `reviews`, `disputes` |
 | Moderação | `reports`, `notifications` |
+| Simulação | `simulated_payments` — "banco" do provedor de pagamento simulado (só dev/homologação) |
 | Operação | `platform_settings`, `webhook_events` (idempotência), `audit_logs`, `data_requests` (LGPD) |
 
 Mapeamento dos nomes do briefing: `price → priceCents`, `subtotal → subtotalCents`, `avatar` (o Better Auth o chama de `image`, mapeado em `src/lib/auth.ts`).

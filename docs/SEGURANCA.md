@@ -29,6 +29,13 @@
 | Edição/pausa/exclusão filtradas pelo dono; atualização condicional de status contra corrida | `features/products/service.ts` |
 | Bloqueio de contato fora da plataforma em anúncios; denúncias com rate limit e sem duplicidade | `schemas/product.ts`, `report-service.ts` |
 | Busca: tsquery montada só com letras/dígitos e SQL parametrizado | `features/products/search.ts` |
+| Pedidos visíveis só para comprador, vendedor ou admin (404 para os demais — testado) | `getOrderForUser` |
+| Endereço do comprador visível ao vendedor apenas enquanto o pedido está pago/em envio | `/pedidos/[id]` |
+| Preço, frete e comissão recalculados no servidor; opção de frete inventada é recusada | `createOrderFromCart` |
+| Reserva com bloqueio de linha + índice único (compra dupla impossível — testado com concorrência) | `createOrderFromCart` |
+| Webhooks: assinatura, idempotência, consulta ao provedor, conferência de valor | `features/payments/service.ts` |
+| Rotina de cron protegida por segredo com comparação em tempo constante | `/api/cron/release-reservations` |
+| Ações administrativas revalidam ADMIN no servidor e são auditadas; usuário comum recebe 404 (testado) | `features/admin` |
 
 ## Próximas etapas
 

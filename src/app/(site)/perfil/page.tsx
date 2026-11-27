@@ -63,7 +63,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         <ProfileForm user={user} />
       </Card>
 
-      <Card className="space-y-4 p-6">
+      <Card id="enderecos" className="space-y-4 p-6">
         <h2 className="flex items-center gap-2 text-lg font-bold">
           <MapPin className="size-5 text-brand" /> Endereços de entrega
         </h2>

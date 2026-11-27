@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, PlusCircle, ShoppingBag, User } from "lucide-react";
+import { Bell, Heart, PlusCircle, ShoppingBag, User } from "lucide-react";
+import { prisma } from "@/lib/db";
 import { Logo } from "@/components/brand/logo";
 import { ButtonLink } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/session";
@@ -8,6 +9,10 @@ import { SearchBox } from "./search-box";
 
 export async function Header() {
   const user = await getCurrentUser();
+  const [cartCount, unread] = user
+    ? await Promise.all([prisma.cartItem.count({ where: { userId: user.id } }), prisma.notification.count({ where: { userId: user.id, readAt: null } })])
+    : [0, 0];
+  const badge = (n: number) => (n > 0 ? <span className="absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">{n > 9 ? "9+" : n}</span> : null);
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-surface/90 backdrop-blur">
@@ -25,8 +30,15 @@ export async function Header() {
           <Link href="/favoritos" className="rounded-full p-2.5 text-ink hover:bg-brand-50" aria-label="Favoritos">
             <Heart className="size-5" />
           </Link>
-          <Link href="/carrinho" className="rounded-full p-2.5 text-ink hover:bg-brand-50" aria-label="Carrinho">
+          {user && (
+            <Link href="/perfil/notificacoes" className="relative rounded-full p-2.5 text-ink hover:bg-brand-50" aria-label={`Notificações${unread ? ` (${unread} não lidas)` : ""}`}>
+              <Bell className="size-5" />
+              {badge(unread)}
+            </Link>
+          )}
+          <Link href="/carrinho" className="relative rounded-full p-2.5 text-ink hover:bg-brand-50" aria-label={`Carrinho${cartCount ? ` (${cartCount})` : ""}`}>
             <ShoppingBag className="size-5" />
+            {badge(cartCount)}
           </Link>
           {user ? (
             <Link href="/perfil" className="flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3 text-sm font-semibold hover:bg-brand-50">
@@ -46,9 +58,18 @@ export async function Header() {
         </nav>
 
         {/* Celular: carrinho no topo; o resto fica na navegação inferior */}
-        <Link href="/carrinho" className="ml-auto rounded-full p-2.5 text-ink md:hidden" aria-label="Carrinho">
-          <ShoppingBag className="size-6" />
-        </Link>
+        <div className="ml-auto flex md:hidden">
+          {user && (
+            <Link href="/perfil/notificacoes" className="relative rounded-full p-2.5 text-ink" aria-label="Notificações">
+              <Bell className="size-6" />
+              {badge(unread)}
+            </Link>
+          )}
+          <Link href="/carrinho" className="relative rounded-full p-2.5 text-ink" aria-label="Carrinho">
+            <ShoppingBag className="size-6" />
+            {badge(cartCount)}
+          </Link>
+        </div>
       </div>
     </header>
   );

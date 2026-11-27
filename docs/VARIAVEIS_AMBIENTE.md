@@ -21,6 +21,7 @@ Validadas em `src/lib/env.ts`. Modelo em `.env.example`. **Nunca** versione `.en
 | `AI_MODEL` | não | Modelo do assistente. Padrão `claude-opus-5-5`. |
 | `PAYMENT_PROVIDER` | não | `simulated` · `mercadopago` (Etapa 5). |
 | `SHIPPING_PROVIDER` | não | `simulated` · `melhorenvio` (Etapa 5). |
+| `CRON_SECRET` | produção | Segredo (32+ caracteres) da rotina `/api/cron/release-reservations`, chamada pelo Vercel Cron a cada 5 min. |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | não | Cria o primeiro admin no seed. Remova após uso. |
 | `TEST_DATABASE_URL` | testes | Banco exclusivo de testes (nome deve conter "test"). |
 

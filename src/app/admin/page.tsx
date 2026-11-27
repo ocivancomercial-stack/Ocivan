@@ -4,13 +4,15 @@ import { requireAdmin } from "@/lib/session";
 
 export default async function AdminDashboard() {
   await requireAdmin(); // cada página revalida a permissão (layouts não re-executam em toda navegação)
-  const [users, activeProducts, pendingReview, openReports, orders, fee] = await Promise.all([
+  const [users, activeProducts, pendingReview, openReports, orders, fee, toShip, disputes] = await Promise.all([
     prisma.user.count(),
     prisma.product.count({ where: { status: "ACTIVE" } }),
     prisma.product.count({ where: { status: "IN_REVIEW" } }),
     prisma.report.count({ where: { status: "OPEN" } }),
     prisma.order.count(),
     prisma.platformSetting.findUnique({ where: { key: "platform_fee_bps" } }),
+    prisma.order.count({ where: { status: "PAID" } }),
+    prisma.order.count({ where: { status: "DISPUTED" } }),
   ]);
 
   const stats = [
@@ -19,6 +21,8 @@ export default async function AdminDashboard() {
     { label: "Aguardando revisão", value: pendingReview },
     { label: "Denúncias abertas", value: openReports },
     { label: "Pedidos", value: orders },
+    { label: "Pagos aguardando envio", value: toShip },
+    { label: "Disputas abertas", value: disputes },
     { label: "Comissão atual", value: `${(Number(fee?.value ?? 1200) / 100).toFixed(1).replace(".", ",")}%` },
   ];
 
@@ -35,7 +39,7 @@ export default async function AdminDashboard() {
           </li>
         ))}
       </ul>
-      <p className="text-sm text-muted">Gestão completa de usuários, anúncios, pedidos, pagamentos e configurações: Etapa 4.</p>
+      
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { ProductRail, SampleBadge } from "@/components/catalog/product-card";
 import { CONDITION_LABEL, STATUS_LABEL } from "@/features/products/constants";
 import { favoritedIds, getProductForPage, listSimilarProducts } from "@/features/products/queries";
 import { ReportForm } from "@/features/products/report-form";
+import { BuyButtons } from "@/features/cart/buy-buttons";
 import { getCurrentUser } from "@/lib/session";
 import { formatBRL } from "@/lib/utils";
 
@@ -78,16 +79,15 @@ export default async function ProductPage({ params }: Props) {
               <Button disabled className="flex-1" size="lg">Vendido</Button>
             ) : product.isOwner ? (
               <ButtonLink href={`/vender/anuncios/${product.id}/editar`} className="flex-1" size="lg">Editar anúncio</ButtonLink>
+            ) : product.status === "ACTIVE" && !product.isSample ? (
+              <BuyButtons productId={product.id} />
             ) : (
-              <Button disabled className="flex-1" size="lg" title="Checkout disponível na Etapa 4">
-                Comprar agora
+              <Button disabled className="flex-1" size="lg">
+                {product.isSample ? "Exemplo — não está à venda" : "Reservado"}
               </Button>
             )}
             {!product.isOwner && <FavoriteButton productId={product.id} initial={favs.has(product.id)} withLabel />}
           </div>
-          {!product.isOwner && product.status === "ACTIVE" && (
-            <p className="-mt-3 text-xs text-muted">Compra pela plataforma em desenvolvimento (Etapa 4: carrinho e checkout).</p>
-          )}
 
           <dl className="grid grid-cols-2 gap-3">
             {specs.map(([k, v]) => (

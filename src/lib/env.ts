@@ -24,6 +24,7 @@ const serverSchema = z
     SUPABASE_STORAGE_BUCKET: z.string().default("product-images"),
     PAYMENT_PROVIDER: z.enum(["simulated", "mercadopago"]).default("simulated"),
     SHIPPING_PROVIDER: z.enum(["simulated", "melhorenvio"]).default("simulated"),
+    CRON_SECRET: z.string().optional(),
     AI_PROVIDER: z.enum(["", "anthropic"]).default(""),
     AI_MODEL: z.string().optional(),
     ANTHROPIC_API_KEY: z.string().optional(),
@@ -43,6 +44,8 @@ const serverSchema = z
       ctx.addIssue({ code: "custom", path: ["STORAGE_DRIVER"], message: "Storage local é proibido em produção" });
     if (env.EMAIL_PROVIDER === "resend" && !env.RESEND_API_KEY)
       ctx.addIssue({ code: "custom", path: ["RESEND_API_KEY"], message: "RESEND_API_KEY obrigatória" });
+    if (!env.CRON_SECRET || env.CRON_SECRET.length < 32)
+      ctx.addIssue({ code: "custom", path: ["CRON_SECRET"], message: "CRON_SECRET (32+ caracteres) obrigatório em produção" });
     if (/dev-only|change-me/i.test(env.BETTER_AUTH_SECRET))
       ctx.addIssue({ code: "custom", path: ["BETTER_AUTH_SECRET"], message: "Segredo de desenvolvimento em produção" });
   });

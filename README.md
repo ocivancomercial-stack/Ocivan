@@ -12,8 +12,8 @@ Aplicação web responsiva (PWA na Etapa 6), com backend preparado para futuros 
 | 1 | Planejamento técnico | ✅ Concluída |
 | 2 | Fundação: Next.js, Tailwind, PostgreSQL, Prisma, autenticação, layout | ✅ Concluída |
 | 3 | Marketplace: anúncios, fotos, busca, filtros, favoritos, página do produto | ✅ Concluída |
-| 4 | Operação: carrinho, checkout, pedidos, painel do vendedor, painel admin | ⏳ Próxima |
-| 5 | Integrações: Mercado Pago, webhooks, Melhor Envio | ⏳ |
+| 4 | Operação: carrinho, checkout, pedidos, painel do vendedor, painel admin | ✅ Concluída |
+| 5 | Integrações: Mercado Pago, webhooks, Melhor Envio | ⏳ Próxima |
 | 6 | PWA, SEO, monitoramento, revisão de segurança, deploy | ⏳ |
 
 Páginas ainda não implementadas exibem explicitamente "Em desenvolvimento — Etapa N". Nada é simulado como se estivesse pronto.

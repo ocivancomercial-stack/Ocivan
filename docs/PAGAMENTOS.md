@@ -1,6 +1,30 @@
 # Pagamentos
 
-> Status: **estrutura de dados pronta; integração prevista para a Etapa 5.** Nenhum pagamento é processado hoje.
+> Status: **fluxo completo implementado com provedor SIMULADO (Etapa 4). Mercado Pago real: Etapa 5.** Nenhum dinheiro real é processado hoje.
+
+## Fluxo implementado
+
+```
+Checkout → pedido PENDING_PAYMENT (peças RESERVED, prazo = reservation_minutes)
+  → "Pagar" → PaymentProvider.createCheckout()  (real: redireciona; simulado: painel de testes)
+  → provedor envia webhook → /api/webhooks/payments/[provider]
+      1. verifyWebhook()  — assinatura (simulado: HMAC-SHA256)
+      2. webhook_events (provider, eventKey) único → duplicado = ignorado
+      3. getPayment()     — CONSULTA O PROVEDOR (fonte da verdade)
+      4. confere pedido e VALOR; aprovado → PAID, peças SOLD, notificações
+```
+
+| Situação no provedor | Efeito |
+|---|---|
+| PENDING / AUTHORIZED / IN_MEDIATION | Registrado; pedido continua aguardando |
+| APPROVED (valor correto) | Pedido pago; reserva convertida; peças vendidas |
+| APPROVED com valor diferente | Ignorado + auditoria (`payment.amount_mismatch`) |
+| APPROVED após expiração | Estorno automático (`payment.late_auto_refund`) |
+| REJECTED / CANCELED | Pedido segue pendente até expirar (comprador pode tentar de novo) |
+| CHARGED_BACK | Pedido vai para DISPUTED |
+| Cancelamento após pago (antes do envio) | `refund()` no provedor → REFUNDED; peça volta a ATIVA |
+
+O painel "PAGAMENTO SIMULADO" só existe com `APP_ENV ≠ production`; os botões mudam o estado no provedor simulado (`simulated_payments`) e disparam o mesmo pipeline do webhook.
 
 ## Princípios (inegociáveis)
 

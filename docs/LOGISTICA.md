@@ -1,6 +1,8 @@
 # Logística
 
-> Status: **estrutura de dados pronta (`shipments`, `shipment_events`); integração prevista para a Etapa 5.**
+> Status: **cotação simulada no checkout e registro manual de envio implementados (Etapa 4). Melhor Envio real: Etapa 5.**
+
+Hoje: `SimulatedShippingProvider` cota "Econômico (simulado)" e "Expresso (simulado)" pela distância entre cidades, além de "Entrega/retirada combinada" (R$ 0) quando o vendedor oferece e o comprador está na RMC. A opção escolhida é **recotada no servidor** ao criar o pedido. O vendedor informa o código de rastreio manualmente; o comprador confirma o recebimento.
 
 ## Fornecedor avaliado: Melhor Envio
 

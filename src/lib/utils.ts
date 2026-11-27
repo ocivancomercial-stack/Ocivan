@@ -29,3 +29,8 @@ export function slugify(text: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 }
+
+/** Data de N dias atrás (fora do corpo de componentes para manter a renderização pura). */
+export function daysAgo(days: number, now = Date.now()): Date {
+  return new Date(now - days * 86400_000);
+}
