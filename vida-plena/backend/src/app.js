@@ -269,6 +269,33 @@ module.exports = function createApp({ config, db, insurer, payments }) {
     return [200, rows];
   }
 
+  // Propostas para o painel do corretor. Nunca inclui a declaração de saúde; o CPF vai mascarado.
+  const STATUS_PROPOSTA = ['ACEITA', 'EM_ANALISE_SUBSCRICAO', 'RECUSADA', 'APOLICE_EMITIDA', 'CANCELADA'];
+  const mascararCpf = cpf => `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**`;
+  async function listarPropostas({ headers, query }) {
+    exigirAdmin(headers);
+    const cond = [], args = [];
+    if (query.status) {
+      if (!STATUS_PROPOSTA.includes(query.status)) throw new ErroHttp(422, 'status inválido');
+      cond.push('p.status=?'); args.push(query.status);
+    }
+    const busca = String(query.busca || '').trim().replace(/[%_\\]/g, '').slice(0, 80);
+    if (busca) {
+      const digitos = busca.replace(/\D/g, '');
+      cond.push(`(LOWER(cl.nome) LIKE ? OR LOWER(p.numero) LIKE ?${digitos.length >= 3 ? ' OR cl.cpf LIKE ?' : ''})`);
+      args.push(`%${busca.toLowerCase()}%`, `%${busca.toLowerCase()}%`);
+      if (digitos.length >= 3) args.push(`%${digitos}%`);
+    }
+    const rows = await db.all(`SELECT p.numero, cl.nome AS cliente, cl.cpf, cl.email, cl.telefone, p.status, p.numero_apolice, p.periodicidade,
+        CASE WHEN p.periodicidade='anual' THEN c.premio_anual ELSE c.premio_mensal END AS valor,
+        p.comissao_percentual, p.vigencia_inicio, p.vigencia_fim, p.renovacao_automatica, p.renovacoes, p.criado_em,
+        (SELECT COALESCE(SUM(cm.valor), 0) FROM comissoes cm WHERE cm.proposta_numero=p.numero AND cm.status<>'CANCELADA') AS comissao_total
+      FROM propostas p JOIN clientes cl ON cl.id=p.cliente_id JOIN cotacoes c ON c.id=p.cotacao_id
+      ${cond.length ? 'WHERE ' + cond.join(' AND ') : ''} ORDER BY p.criado_em DESC, p.numero LIMIT 500`, ...args);
+    return [200, rows.map(r => ({ ...r, cpf: mascararCpf(r.cpf), renovacao_automatica: !!r.renovacao_automatica,
+      comissao_total: C.r2(Number(r.comissao_total)) }))];
+  }
+
   const rotas = [
     // Rota pública: não expõe a comissão (o percentual fica em /api/admin/comissoes/resumo).
     ['GET', '/api/saude', async () => [200, { ok: true, seguradora: insurer.nome, pagamentos: payments.nome,
@@ -285,6 +312,7 @@ module.exports = function createApp({ config, db, insurer, payments }) {
     ['POST', '/api/admin/renovacoes/processar', processarRenovacoes],
     ['GET', '/api/admin/agendamentos', listarExecucoes],
     ['GET', '/api/admin/vencimentos', listarVencimentos],
+    ['GET', '/api/admin/propostas', listarPropostas],
     ['POST', '/api/admin/propostas/:numero/renovacao', alterarRenovacao],
   ].map(([m, path, fn]) => ({ m, fn, re: new RegExp('^' + path.replace(/:(\w+)/g, '(?<$1>[^/]+)') + '$') }));
 

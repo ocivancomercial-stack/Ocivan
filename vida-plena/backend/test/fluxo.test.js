@@ -224,6 +224,32 @@ test('produção exige PostgreSQL e chave de criptografia', () => {
   assert.equal(rodar({ DATABASE_URL: 'postgres://x', CHAVE_DADOS_SENSIVEIS: CHAVE }).status, 0);
 });
 
+test('painel: lista de propostas sem declaração de saúde e com CPF mascarado', async () => {
+  const [, cot] = await call('POST', '/api/cotacoes', cotacao);
+  const [, prop] = await call('POST', '/api/propostas', proposta(cot.idCotacao, {
+    proponente: { nome: 'Joana Painel Teste', cpf: '111.444.777-35', email: 'joana@exemplo.com' }, periodicidade: 'anual' }));
+  await call('POST', '/api/pagamentos', { numeroProposta: prop.numeroProposta, tokenCartao: 'tok_aprova_4111', parcelas: 12 });
+
+  assert.equal((await call('GET', '/api/admin/propostas', null, {}))[0], 401);
+  const [s, lista] = await call('GET', '/api/admin/propostas', null, ADM, { busca: 'joana painel' });
+  assert.equal(s, 200);
+  assert.equal(lista.length, 1);
+  const p = lista[0];
+  assert.equal(p.numero, prop.numeroProposta);
+  assert.equal(p.cpf, '***.444.777-**');
+  assert.equal(p.valor, cot.premioAnual);
+  assert.equal(p.renovacao_automatica, true);
+  assert.equal(p.comissao_total, Math.round(Math.round(cot.premioAnual / 1.0038 * 100) / 100 * 0.3 * 100) / 100);
+  assert.ok(!JSON.stringify(lista).includes('declaracao'), 'a declaração de saúde nunca sai na lista');
+  assert.ok(!JSON.stringify(lista).includes('11144477735'), 'o CPF completo não sai na lista');
+
+  assert.equal((await call('GET', '/api/admin/propostas', null, ADM, { busca: '444.777' }))[1].length, 1, 'busca por parte do CPF');
+  assert.equal((await call('GET', '/api/admin/propostas', null, ADM, { busca: prop.numeroProposta.toLowerCase() }))[1].length, 1);
+  assert.equal((await call('GET', '/api/admin/propostas', null, ADM, { busca: '%' }))[1].length > 1, true, '% não vira curinga, a busca fica vazia');
+  assert.ok((await call('GET', '/api/admin/propostas', null, ADM, { status: 'ACEITA' }))[1].every(x => x.status === 'ACEITA'));
+  assert.equal((await call('GET', '/api/admin/propostas', null, ADM, { status: 'X' }))[0], 422);
+});
+
 test('datas no fuso de Brasília', () => {
   const { partesNoFuso } = require('../src/services/datas');
   assert.deepEqual(partesNoFuso('America/Sao_Paulo', new Date('2026-11-28T01:30:00Z')), { data: '2026-11-27', hora: 22, minuto: 30 });
