@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const V = require('./services/validacao');
 const C = require('./services/comissao');
 const { criarCripto, contextoDeclaracao } = require('./services/cripto');
+const { hojeNoFuso } = require('./services/datas');
 
 class ErroHttp extends Error { constructor(status, msg) { super(msg); this.status = status; } }
 
@@ -13,7 +14,6 @@ function somarAnos(data, anos) {
   const ult = new Date(Date.UTC(a + anos, m, 0)).getUTCDate();
   return `${a + anos}-${String(m).padStart(2, '0')}-${String(Math.min(d, ult)).padStart(2, '0')}`;
 }
-const hoje = () => new Date().toISOString().slice(0, 10);
 function somarDias(data, dias) { const t = new Date(data + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + dias); return t.toISOString().slice(0, 10); }
 
 function tokenOk(recebido, esperado) {
@@ -24,6 +24,7 @@ function tokenOk(recebido, esperado) {
 
 // db: interface de ./db (SQLite ou PostgreSQL), toda assíncrona.
 module.exports = function createApp({ config, db, insurer, payments }) {
+  const hoje = () => hojeNoFuso(config.fusoHorario);
   // Declaração de saúde (LGPD): gravada cifrada quando há chave. A config exige a chave em produção.
   const cripto = config.chaveDadosSensiveis ? criarCripto(config.chaveDadosSensiveis) : null;
   if (!cripto) console.warn('Aviso: CHAVE_DADOS_SENSIVEIS ausente; a declaração de saúde será gravada SEM criptografia (só aceitável em desenvolvimento).');
@@ -205,10 +206,9 @@ module.exports = function createApp({ config, db, insurer, payments }) {
 
   // ---------- Admin: vigência e renovação automática ----------
   // Renova as apólices cuja vigência termina dentro da antecedência configurada (padrão 30 dias).
-  // Rodar uma vez por dia (agendador do servidor / cron chamando esta rota).
-  async function processarRenovacoes({ headers, body }) {
-    exigirAdmin(headers);
-    const ref = body && body.dataReferencia ? V.data(body.dataReferencia, 'dataReferencia') : hoje();
+  // Roda todo dia pelo agendador (src/agendador.js) e também pode ser chamada pela rota abaixo.
+  // Uma apólice com erro na seguradora continua na lista e é tentada de novo no dia seguinte.
+  async function renovarVencendo(ref = hoje()) {
     const limite = somarDias(ref, config.renovacaoAntecedenciaDias);
     const lista = await db.all(`SELECT * FROM propostas WHERE renovacao_automatica=1 AND status IN ('ACEITA','APOLICE_EMITIDA')
                      AND vigencia_fim IS NOT NULL AND vigencia_fim<=? ORDER BY vigencia_fim`, limite);
@@ -218,18 +218,37 @@ module.exports = function createApp({ config, db, insurer, payments }) {
       let r;
       try { r = await insurer.renovar({ numeroProposta: p.numero, novaVigenciaInicio: novoInicio, novaVigenciaFim: novoFim }); }
       catch (e) { resultado.push({ numeroProposta: p.numero, status: 'ERRO', motivo: e.message }); continue; }
-      await db.tx(async b => {
+      // A atualização só vale se a vigência ainda for a lida acima: se outra execução já
+      // renovou esta apólice, nada é alterado (a vigência nunca é estendida duas vezes).
+      const aplicada = await db.tx(async b => {
+        const u = r.status === 'RENOVADA'
+          ? await b.run(`UPDATE propostas SET vigencia_inicio=?, vigencia_fim=?, renovacoes=renovacoes+1, atualizado_em=CURRENT_TIMESTAMP
+                         WHERE numero=? AND vigencia_fim=? AND renovacao_automatica=1`, novoInicio, novoFim, p.numero, p.vigencia_fim)
+          : await b.run(`UPDATE propostas SET renovacao_automatica=0, atualizado_em=CURRENT_TIMESTAMP
+                         WHERE numero=? AND vigencia_fim=? AND renovacao_automatica=1`, p.numero, p.vigencia_fim);
+        if (!u.changes) return false;
         await b.run(`INSERT INTO renovacoes (proposta_numero, vigencia_anterior_fim, nova_vigencia_inicio, nova_vigencia_fim, status, motivo) VALUES (?,?,?,?,?,?)`,
           p.numero, p.vigencia_fim, novoInicio, novoFim, r.status, r.motivo || null);
-        if (r.status === 'RENOVADA') {
-          await b.run(`UPDATE propostas SET vigencia_inicio=?, vigencia_fim=?, renovacoes=renovacoes+1, atualizado_em=CURRENT_TIMESTAMP WHERE numero=?`, novoInicio, novoFim, p.numero);
-        } else {
-          await b.run(`UPDATE propostas SET renovacao_automatica=0, atualizado_em=CURRENT_TIMESTAMP WHERE numero=?`, p.numero);
-        }
+        return true;
       });
+      if (!aplicada) { resultado.push({ numeroProposta: p.numero, status: 'JA_PROCESSADA' }); continue; }
       resultado.push({ numeroProposta: p.numero, status: r.status, novaVigencia: r.status === 'RENOVADA' ? { inicio: novoInicio, fim: novoFim } : null, motivo: r.motivo });
     }
-    return [200, { dataReferencia: ref, processadas: resultado.length, resultado }];
+    return { dataReferencia: ref, processadas: resultado.length, resultado };
+  }
+
+  async function processarRenovacoes({ headers, body }) {
+    exigirAdmin(headers);
+    const ref = body && body.dataReferencia ? V.data(body.dataReferencia, 'dataReferencia') : hoje();
+    return [200, await renovarVencendo(ref)];
+  }
+
+  // Histórico das execuções diárias do agendador.
+  async function listarExecucoes({ headers }) {
+    exigirAdmin(headers);
+    const rows = await db.all(`SELECT tarefa, data_referencia, status, iniciado_em, concluido_em, resultado_json
+      FROM agendamentos ORDER BY data_referencia DESC, tarefa LIMIT 60`);
+    return [200, rows.map(({ resultado_json, ...r }) => ({ ...r, resultado: resultado_json ? JSON.parse(resultado_json) : null }))];
   }
 
   // Liga ou desliga a renovação automática de uma apólice (ex.: cliente pediu para não renovar).
@@ -264,6 +283,7 @@ module.exports = function createApp({ config, db, insurer, payments }) {
     ['GET', '/api/admin/comissoes/resumo', resumoComissoes],
     ['POST', '/api/admin/comissoes/:id/recebida', marcarRecebida],
     ['POST', '/api/admin/renovacoes/processar', processarRenovacoes],
+    ['GET', '/api/admin/agendamentos', listarExecucoes],
     ['GET', '/api/admin/vencimentos', listarVencimentos],
     ['POST', '/api/admin/propostas/:numero/renovacao', alterarRenovacao],
   ].map(([m, path, fn]) => ({ m, fn, re: new RegExp('^' + path.replace(/:(\w+)/g, '(?<$1>[^/]+)') + '$') }));
@@ -281,7 +301,7 @@ module.exports = function createApp({ config, db, insurer, payments }) {
     }
   }
 
-  return { handle };
+  return { handle, renovarVencendo };
 };
 
 module.exports.somarAnos = somarAnos;

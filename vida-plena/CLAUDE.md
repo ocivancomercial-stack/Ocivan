@@ -19,6 +19,7 @@ App de venda de **seguro de vida individual 100% digital**: cotação, escolha d
   - O cliente nunca vê a comissão.
 - **Vigência de 5 anos com renovação automática** (`VIGENCIA_ANOS`).
   - A renovação é processada 30 dias antes do fim e estende a vigência por mais 5 anos.
+  - Roda sozinha todo dia às 3h de Brasília pelo agendador interno (`src/agendador.js`), uma vez por dia mesmo com vários servidores.
   - Pode ser desligada por apólice.
 - **Idade de aceitação:** 18 a 65 anos.
 - **Coberturas:**
@@ -46,13 +47,15 @@ frontend/index.html   app (HTML único, azul e branco, foto familia.jpg)
                       A tokenização do cartão ainda é simulada no navegador (gera tok_aprova_XXXX / tok_recusa_0002).
 backend/              servidor Node.js 22.5+ (http nativo; única dependência: pg)
   src/server.js       servidor HTTP: API em /api/* e arquivos do frontend/ na mesma origem
-  src/app.js          rotas e regras do fluxo
+  src/app.js          rotas e regras do fluxo (renovarVencendo() é usada pela rota e pelo agendador)
+  src/agendador.js    tarefas diárias; reserva o dia na tabela agendamentos
+  src/services/datas.js  datas no fuso do negócio (FUSO_HORARIO); não usar a data UTC
   src/db/             banco: PostgreSQL com DATABASE_URL (produção), senão SQLite (dev e testes); mesma interface assíncrona
                       O SQL usa "?" nos parâmetros e só recursos comuns aos dois bancos (db.mes() para agrupar por mês).
   src/insurer/        tokioMarine.mock.js (simulação) e tokioMarine.http.js (esqueleto da API real; rotas são suposições)
   src/payments/       cobrança simulada (PAYMENTS=mock) e cobrança pela Tokio (PAYMENTS=tokio, usa tokioMarine.http.js)
   src/services/       comissao.js, validacao.js
-  test/fluxo.test.js  14 testes do fluxo completo (SQLite e PostgreSQL)
+  test/fluxo.test.js  19 testes do fluxo completo (SQLite e PostgreSQL)
 docs/telas/           capturas das telas para apresentação
 ```
 
@@ -77,6 +80,10 @@ Para apontar o app para outro servidor: `index.html?api=https://api.exemplo.com.
 4. **Painel administrativo** para o corretor: comissões, vencimentos e renovações.
 5. **Integração real com a Tokio**, quando houver documentação: ajustar `tokioMarine.http.js` e usar `INSURER=tokio`.
 6. **Publicação:** transformar o front-end em PWA ou app (React Native/Expo), com domínio próprio e HTTPS.
+7. ~~Agendador da renovação automática.~~ Feito: `src/agendador.js`, todo dia às 3h de Brasília.
+8. **E-mails:** o app promete enviar a apólice por e-mail, mas o sistema ainda não envia nenhum.
+9. **Proteção contra abuso:** limite de requisições por IP nas rotas públicas.
+10. **Tela "minha proposta"** para o cliente acompanhar o status (a rota `GET /api/propostas/:numero` já existe).
 
 ## Pendências com a Tokio Marine
 - Acesso à API e ambiente de homologação.

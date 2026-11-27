@@ -57,10 +57,17 @@ Exemplo: com prêmio mensal líquido de R$ 34,07, a comissão é de R$ 10,22 por
 ## Vigência e renovação automática
 
 - **Vigência de 5 anos.** Começa na data da proposta e o valor fica em `VIGENCIA_ANOS` no `.env`. Uma data de 29/02 vira 28/02 quando o ano final não é bissexto.
-- **Renovação automática.** A rota `POST /api/admin/renovacoes/processar` encontra as apólices que vencem nos próximos 30 dias (`RENOVACAO_ANTECEDENCIA_DIAS`) e pede a renovação à seguradora.
+- **Renovação automática.** Todo dia, o servidor encontra as apólices que vencem nos próximos 30 dias (`RENOVACAO_ANTECEDENCIA_DIAS`) e pede a renovação à seguradora.
   - Cada renovação estende a vigência por mais 5 anos.
   - O histórico fica guardado na tabela `renovacoes`.
-  - Essa rota deve rodar **uma vez por dia**, por um agendador (cron) no servidor.
+- **Agendador** (`src/agendador.js`): já vem ligado no servidor, sem precisar de cron.
+  - Roda uma vez por dia, a partir das 3h de Brasília (`RENOVACAO_HORA`, `FUSO_HORARIO`). Se o servidor estava desligado nesse horário, roda assim que voltar.
+  - Com vários servidores no ar, só um executa cada dia: o dia é reservado na tabela `agendamentos`.
+  - Se a execução falhar, é tentada de novo depois de 15 minutos. Se um servidor cair no meio, outro assume depois de 1 hora.
+  - Uma apólice que deu erro na seguradora é tentada de novo no dia seguinte, enquanto estiver dentro dos 30 dias.
+  - A vigência nunca é estendida duas vezes, mesmo se a rota manual e o agendador rodarem juntos.
+  - Histórico das execuções: `GET /api/admin/agendamentos`. Para desligar: `AGENDADOR_ATIVO=false`.
+- As datas (início da vigência, dia da renovação) seguem o fuso de Brasília, e não o horário UTC do servidor.
 - **Cliente que não quer renovar:** desligue a renovação pela rota `POST /api/admin/propostas/:numero/renovacao` com `{ "ativa": false }`.
 - **Se a seguradora recusar a renovação:** a renovação automática daquela apólice é desligada e o motivo fica registrado.
 - **Cobranças durante a vigência:**
@@ -82,7 +89,8 @@ Exemplo: com prêmio mensal líquido de R$ 34,07, a comissão é de R$ 10,22 por
 | GET | `/api/admin/comissoes?status=&de=&ate=` | Você | Lista as comissões |
 | GET | `/api/admin/comissoes/resumo` | Você | Totais por status e por mês |
 | POST | `/api/admin/comissoes/:id/recebida` | Você | Marca uma comissão como recebida |
-| POST | `/api/admin/renovacoes/processar` | Agendador | Renova as apólices que estão perto do fim da vigência |
+| POST | `/api/admin/renovacoes/processar` | Você | Roda a renovação na hora (o agendador já faz isso todo dia) |
+| GET | `/api/admin/agendamentos` | Você | Histórico das execuções diárias do agendador |
 | GET | `/api/admin/vencimentos?dias=90` | Você | Lista as apólices que vencem nos próximos dias |
 | POST | `/api/admin/propostas/:numero/renovacao` | Você | Liga ou desliga a renovação automática de uma apólice |
 
@@ -100,7 +108,9 @@ src/
   db/postgres.js               PostgreSQL (produção)
   db/schema.postgres.sql       tabelas do PostgreSQL
   db/sqlite.js                 SQLite (desenvolvimento e testes), com as tabelas
+  agendador.js                 tarefas diárias (renovação automática), uma vez por dia mesmo com vários servidores
   services/cripto.js           criptografia da declaração de saúde
+  services/datas.js            datas no fuso de Brasília
   insurer/tokioMarine.mock.js  seguradora simulada
   insurer/tokioMarine.http.js  esqueleto da API real da Tokio (ajustar à documentação dela)
   payments/index.js            cobrança simulada (mock) e cobrança pela Tokio (tokio)

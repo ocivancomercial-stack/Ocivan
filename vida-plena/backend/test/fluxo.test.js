@@ -224,6 +224,90 @@ test('produção exige PostgreSQL e chave de criptografia', () => {
   assert.equal(rodar({ DATABASE_URL: 'postgres://x', CHAVE_DADOS_SENSIVEIS: CHAVE }).status, 0);
 });
 
+test('datas no fuso de Brasília', () => {
+  const { partesNoFuso } = require('../src/services/datas');
+  assert.deepEqual(partesNoFuso('America/Sao_Paulo', new Date('2026-11-28T01:30:00Z')), { data: '2026-11-27', hora: 22, minuto: 30 });
+  assert.equal(partesNoFuso('America/Sao_Paulo', new Date('2026-11-28T06:00:00Z')).hora, 3);
+});
+
+test('agendador: roda uma vez por dia, a partir da hora certa, mesmo com dois servidores', async () => {
+  const { criarAgendador } = require('../src/agendador');
+  let t = new Date('2026-11-27T05:30:00Z'); // 02:30 em Brasília
+  let execucoes = 0;
+  const novo = () => criarAgendador({ db, tarefa: 'teste_diario', hora: 3, fusoHorario: 'America/Sao_Paulo', agora: () => t, log: {},
+    executar: async data => { execucoes++; return { data }; } });
+  const s1 = novo(), s2 = novo();
+
+  assert.equal((await s1.conferir()).motivo, 'antes do horário');
+  t = new Date('2026-11-27T06:10:00Z'); // 03:10
+  const r = await s1.conferir();
+  assert.equal(r.executou, true); assert.equal(r.data, '2026-11-27');
+  assert.equal((await s2.conferir()).executou, false, 'o outro servidor não roda o mesmo dia');
+  assert.equal((await s1.conferir()).executou, false, 'nem o mesmo servidor de novo');
+
+  // Dia seguinte, os dois conferem ao mesmo tempo: só um executa
+  t = new Date('2026-11-28T13:00:00Z');
+  const ambos = await Promise.all([s1.conferir(), s2.conferir()]);
+  assert.equal(ambos.filter(x => x.executou).length, 1);
+  assert.equal(execucoes, 2);
+  const linhas = await db.all(`SELECT status FROM agendamentos WHERE tarefa='teste_diario'`);
+  assert.deepEqual(linhas.map(l => l.status), ['CONCLUIDA', 'CONCLUIDA']);
+});
+
+test('agendador: tenta de novo depois de erro e assume execução travada', async () => {
+  const { criarAgendador } = require('../src/agendador');
+  let t = new Date('2026-11-29T10:00:00Z'), falhar = true;
+  const ag = criarAgendador({ db, tarefa: 'teste_erro', hora: 3, fusoHorario: 'America/Sao_Paulo', agora: () => t, log: {},
+    executar: async () => { if (falhar) throw new Error('seguradora fora do ar'); return { ok: true }; } });
+  assert.equal((await ag.conferir()).erro, 'seguradora fora do ar');
+  t = new Date(t.getTime() + 5 * 60_000);
+  assert.equal((await ag.conferir()).executou, false, 'espera antes de tentar de novo');
+  falhar = false; t = new Date(t.getTime() + 15 * 60_000);
+  assert.equal((await ag.conferir()).executou, true);
+  assert.equal((await db.get(`SELECT status FROM agendamentos WHERE tarefa='teste_erro'`)).status, 'CONCLUIDA');
+
+  // Servidor caiu no meio de uma execução (ficou EXECUTANDO há 2 horas): outro servidor assume
+  await db.run(`INSERT INTO agendamentos (tarefa, data_referencia, status, iniciado_em) VALUES ('teste_travada', '2026-11-29', 'EXECUTANDO', ?)`,
+    new Date(t.getTime() - 2 * 3600_000).toISOString());
+  const ag2 = criarAgendador({ db, tarefa: 'teste_travada', hora: 3, fusoHorario: 'America/Sao_Paulo', agora: () => t, log: {}, executar: async () => ({}) });
+  assert.equal((await ag2.conferir()).executou, true);
+});
+
+test('agendador renova a apólice e o histórico aparece no admin', async () => {
+  const { criarAgendador } = require('../src/agendador');
+  const { somarAnos } = require('../src/app');
+  const [, cot] = await call('POST', '/api/cotacoes', cotacao);
+  const [, prop] = await call('POST', '/api/propostas', proposta(cot.idCotacao));
+  // Relógio 20 dias antes do fim da vigência, ao meio-dia em Brasília
+  const t = new Date(prop.vigencia.fim + 'T15:00:00Z'); t.setUTCDate(t.getUTCDate() - 20);
+  const ag = criarAgendador({ db, tarefa: 'renovacoes', hora: 3, fusoHorario: 'America/Sao_Paulo', agora: () => t, log: {},
+    executar: data => app.renovarVencendo(data) });
+  const r = await ag.conferir();
+  const item = r.resultado.resultado.find(x => x.numeroProposta === prop.numeroProposta);
+  assert.equal(item.status, 'RENOVADA');
+  assert.equal(item.novaVigencia.fim, somarAnos(prop.vigencia.fim, 5));
+  const [s, hist] = await call('GET', '/api/admin/agendamentos', null, ADM);
+  assert.equal(s, 200);
+  const ex = hist.find(h => h.tarefa === 'renovacoes' && h.data_referencia === t.toISOString().slice(0, 10));
+  assert.equal(ex.status, 'CONCLUIDA');
+  assert.ok(ex.resultado.resultado.some(x => x.numeroProposta === prop.numeroProposta));
+  assert.equal((await call('GET', '/api/admin/agendamentos', null, {}))[0], 401);
+});
+
+test('duas renovações ao mesmo tempo não estendem a vigência duas vezes', async () => {
+  const [, cot] = await call('POST', '/api/cotacoes', cotacao);
+  const [, prop] = await call('POST', '/api/propostas', proposta(cot.idCotacao));
+  const ref = new Date(prop.vigencia.fim + 'T00:00:00Z'); ref.setUTCDate(ref.getUTCDate() - 10);
+  const dia = ref.toISOString().slice(0, 10);
+  const [a, b] = await Promise.all([app.renovarVencendo(dia), app.renovarVencendo(dia)]);
+  const status = [a, b].map(r => r.resultado.find(x => x.numeroProposta === prop.numeroProposta).status).sort();
+  assert.deepEqual(status, ['JA_PROCESSADA', 'RENOVADA']);
+  const [, cons] = await call('GET', `/api/propostas/${prop.numeroProposta}`);
+  assert.equal(cons.vigencia.renovacoes, 1);
+  const { n } = await db.get('SELECT COUNT(*) AS n FROM renovacoes WHERE proposta_numero=?', prop.numeroProposta);
+  assert.equal(n, 1);
+});
+
 test('banco SQLite antigo recebe as colunas novas (migração)', async () => {
   const { DatabaseSync } = require('node:sqlite');
   const fs = require('node:fs'), os = require('node:os'), path = require('node:path');

@@ -81,6 +81,17 @@ CREATE TABLE IF NOT EXISTS renovacoes (
   criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Execuções das tarefas diárias (agendador). A chave impede que dois servidores rodem o mesmo dia.
+CREATE TABLE IF NOT EXISTS agendamentos (
+  tarefa TEXT NOT NULL,                   -- ex.: renovacoes
+  data_referencia DATE NOT NULL,          -- dia no fuso do negócio
+  status TEXT NOT NULL,                   -- EXECUTANDO, CONCLUIDA, ERRO
+  iniciado_em TIMESTAMPTZ NOT NULL,
+  concluido_em TIMESTAMPTZ,
+  resultado_json TEXT,
+  PRIMARY KEY (tarefa, data_referencia)
+);
+
 CREATE INDEX IF NOT EXISTS idx_comissoes_status ON comissoes(status);
 CREATE INDEX IF NOT EXISTS idx_comissoes_proposta ON comissoes(proposta_numero);
 CREATE INDEX IF NOT EXISTS idx_propostas_status ON propostas(status);

@@ -29,8 +29,17 @@ async function abrir(url, { schema } = {}) {
   });
   pool.on('error', e => console.error('PostgreSQL: erro em conexão ociosa:', e.message));
 
-  if (schema) await pool.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
-  await pool.query(SCHEMA);
+  // Cria as tabelas com uma trava: se vários servidores sobem juntos, um cria e os outros esperam
+  // (sem a trava, o PostgreSQL pode recusar o CREATE TABLE IF NOT EXISTS simultâneo).
+  const cliente = await pool.connect();
+  try {
+    await cliente.query('SELECT pg_advisory_lock(hashtext($1))', ['vida-plena:schema']);
+    if (schema) await cliente.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
+    await cliente.query(SCHEMA);
+  } finally {
+    await cliente.query('SELECT pg_advisory_unlock(hashtext($1))', ['vida-plena:schema']).catch(() => {});
+    cliente.release();
+  }
 
   const com = cliente => ({
     get: async (sql, ...args) => (await cliente.query(converter(sql), args)).rows[0],

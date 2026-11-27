@@ -88,6 +88,16 @@ CREATE TABLE IF NOT EXISTS renovacoes (
   criado_em TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS agendamentos (
+  tarefa TEXT NOT NULL,                -- ex.: renovacoes
+  data_referencia TEXT NOT NULL,       -- dia (AAAA-MM-DD) no fuso do negócio
+  status TEXT NOT NULL,                -- EXECUTANDO, CONCLUIDA, ERRO
+  iniciado_em TEXT NOT NULL,           -- ISO, UTC
+  concluido_em TEXT,
+  resultado_json TEXT,
+  PRIMARY KEY (tarefa, data_referencia)
+);
+
 CREATE INDEX IF NOT EXISTS idx_comissoes_status ON comissoes(status);
 CREATE INDEX IF NOT EXISTS idx_propostas_status ON propostas(status);
 `;

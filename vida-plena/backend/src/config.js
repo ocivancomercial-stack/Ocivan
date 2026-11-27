@@ -25,6 +25,10 @@ const config = {
   vigenciaAnos: num(process.env.VIGENCIA_ANOS, 5),
   renovacaoAutomatica: (process.env.RENOVACAO_AUTOMATICA || 'true') === 'true',
   renovacaoAntecedenciaDias: num(process.env.RENOVACAO_ANTECEDENCIA_DIAS, 30),
+  // Agendador: roda a renovação uma vez por dia, a partir desta hora (0 a 23), no fuso do negócio.
+  agendadorAtivo: (process.env.AGENDADOR_ATIVO || 'true') === 'true',
+  renovacaoHora: num(process.env.RENOVACAO_HORA, 3),
+  fusoHorario: process.env.FUSO_HORARIO || 'America/Sao_Paulo',
 
   insurer: process.env.INSURER || 'mock',
   tokio: {
@@ -44,6 +48,10 @@ if (!(config.comissaoPercentual > 0 && config.comissaoPercentual < 100)) {
   throw new Error('COMISSAO_PERCENTUAL inválido: use um número entre 0 e 100');
 }
 
+if (!(Number.isInteger(config.renovacaoHora) && config.renovacaoHora >= 0 && config.renovacaoHora <= 23)) {
+  throw new Error('RENOVACAO_HORA inválida: use um número inteiro de 0 a 23');
+}
+if (!require('./services/datas').fusoValido(config.fusoHorario)) throw new Error(`FUSO_HORARIO inválido: ${config.fusoHorario}`);
 if ((config.databaseUrl || config.producao) && !config.chaveDadosSensiveis) {
   throw new Error('Defina CHAVE_DADOS_SENSIVEIS: em produção a declaração de saúde precisa ser gravada criptografada (LGPD)');
 }
