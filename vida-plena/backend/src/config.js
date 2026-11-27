@@ -6,6 +6,8 @@ const config = {
   port: num(process.env.PORT, 3000),
   corsOrigins: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(s => s.trim()),
   dbPath: process.env.DB_PATH || './data/vida-plena.db',
+  // Pasta do app servido em http://localhost:PORT/ (mesma origem da API).
+  frontendDir: process.env.FRONTEND_DIR || require('node:path').join(__dirname, '..', '..', 'frontend'),
   adminToken: process.env.ADMIN_TOKEN || '',
   webhookSecret: process.env.WEBHOOK_SECRET || '',
 

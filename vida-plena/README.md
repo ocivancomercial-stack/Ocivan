@@ -2,8 +2,8 @@
 
 App de venda de seguro de vida 100% digital, com integração planejada com a Tokio Marine.
 
-- `frontend/`: protótipo do app. Abra `frontend/index.html` no navegador.
-- `backend/`: servidor (Node.js 22.5+). Veja `backend/README.md`.
+- `frontend/`: o app. Com o servidor rodando, abra http://localhost:3000. Aberto direto no navegador, roda em modo simulação.
+- `backend/`: servidor (Node.js 22.5+) que também serve o app. Veja `backend/README.md`.
 - `CLAUDE.md`: contexto, regras de negócio e próximas tarefas, para quem for desenvolver.
 
 ## Abrir no Claude Code

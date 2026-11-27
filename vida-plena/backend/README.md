@@ -10,9 +10,11 @@ Precisa de Node.js 22.5 ou mais novo. Não há dependências para instalar.
 
 ```bash
 cp .env.example .env     # ajuste os valores
-npm start                # sobe em http://localhost:3000
+npm start                # app e API em http://localhost:3000
 npm test                 # roda os testes do fluxo completo
 ```
+
+O servidor também serve o app (`../frontend`, ou a pasta em `FRONTEND_DIR`) na mesma origem da API, então não é preciso configurar CORS. Abra http://localhost:3000 e faça uma contratação: as chamadas aparecem no painel "Integração com a seguradora".
 
 ## Programa de comissão
 
@@ -74,7 +76,7 @@ Exemplo: com prêmio mensal líquido de R$ 34,07, a comissão é de R$ 10,22 por
 
 ```
 src/
-  server.js                    servidor HTTP (CORS, limite de corpo, JSON)
+  server.js                    servidor HTTP (API, arquivos do app, CORS, limite de corpo, JSON)
   app.js                       rotas e regras do fluxo
   config.js                    configuração, inclusive o percentual de comissão
   db.js                        banco SQLite: clientes, cotações, propostas, pagamentos, comissões
