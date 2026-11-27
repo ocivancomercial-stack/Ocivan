@@ -39,7 +39,8 @@ export const PRIVACY: LegalSection[] = [
     "Executar o contrato (cadastro, anúncios, pedidos, entregas), cumprir obrigações legais, prevenir fraudes e, com seu consentimento quando exigido, enviar comunicações." ] },
   { title: "Compartilhamento", paragraphs: [
     "Compartilhamos o mínimo necessário com: provedor de pagamento, transportadoras/agregador de fretes (nome e endereço de entrega para o vendedor e a transportadora), provedores de hospedagem e e-mail.",
-    "Seu endereço residencial nunca é exibido publicamente. Nos anúncios mostramos apenas a cidade aproximada." ] },
+    "Seu endereço residencial nunca é exibido publicamente. Nos anúncios mostramos apenas a cidade aproximada.",
+    "Assistente de anúncio (opcional): se você clicar em “Sugerir pela foto de capa”, essa foto é enviada, sem metadados de localização, a um provedor de inteligência artificial (Anthropic) apenas para gerar sugestões de texto." ] },
   { title: "Seus direitos", paragraphs: [
     "Você pode solicitar confirmação, acesso, correção, portabilidade, anonimização ou exclusão dos seus dados, além de revogar consentimentos, pela página Meus dados ou pelo e-mail de suporte." ] },
   { title: "Retenção e segurança", paragraphs: [
