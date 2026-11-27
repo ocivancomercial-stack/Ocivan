@@ -12,7 +12,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob:${supabaseHost ? ` https://${supabaseHost}` : ""} https://*.mercadopago.com https://*.mlstatic.com`,
   "font-src 'self' data:",
-  `connect-src 'self'${isDev ? " ws:" : ""} https://api.mercadopago.com https://*.mercadopago.com`,
+  `connect-src 'self'${isDev ? " ws:" : ""}${supabaseHost ? ` https://${supabaseHost}` : ""} https://api.mercadopago.com https://*.mercadopago.com`,
   "frame-src 'self' https://*.mercadopago.com https://*.mercadopago.com.br",
   "frame-ancestors 'none'",
   "base-uri 'self'",

@@ -7,6 +7,7 @@ import { canOwner } from "@/features/products/status";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { getSetting } from "@/lib/settings";
+import { isListingAssistantEnabled } from "@/services/ai/listing-assistant";
 
 export const metadata: Metadata = { title: "Editar anúncio", robots: { index: false } };
 
@@ -33,6 +34,7 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
         categories={categories}
         brands={brands}
         feeBps={feeBps}
+        aiEnabled={isListingAssistantEnabled()}
         defaultCity={product.city}
         productId={product.id}
         productStatus={product.status}

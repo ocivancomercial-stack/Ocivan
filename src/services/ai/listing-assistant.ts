@@ -19,10 +19,15 @@ export type ListingSuggestion = {
   disclaimers: string[];
 };
 
+export type SuggestionContext = { categories: string[]; brands: string[]; colors: string[] };
+
 export interface ListingAssistant {
   readonly name: string;
-  suggest(image: { data: Buffer; contentType: string }, context: { categories: string[]; brands: string[]; colors: string[] }): Promise<ListingSuggestion>;
+  suggest(image: { data: Buffer; contentType: "image/webp" }, context: SuggestionContext): Promise<ListingSuggestion>;
 }
+
+/** Erro com mensagem segura para exibir ao vendedor. */
+export class AssistantError extends Error {}
 
 export const SUGGESTION_DISCLAIMERS = [
   "Sugestões automáticas: revise tudo antes de publicar.",
@@ -48,21 +53,37 @@ export function sanitizeSuggestion(
   };
 }
 
-/**
- * Retorna o assistente configurado ou null (IA desligada).
- * Nenhum provedor real está implementado nesta etapa: a escolha do fornecedor e o custo
- * por chamada dependem de aprovação (ver docs/ROADMAP.md).
- */
-export function getListingAssistant(): ListingAssistant | null {
+let assistant: ListingAssistant | null | undefined;
+
+/** Retorna o assistente configurado ou null (IA desligada: AI_PROVIDER vazio). */
+export async function getListingAssistant(): Promise<ListingAssistant | null> {
+  if (assistant !== undefined) return assistant;
   switch (process.env.AI_PROVIDER) {
     case undefined:
     case "":
-      return null;
+      assistant = null;
+      break;
+    case "anthropic": {
+      if (!isListingAssistantEnabled()) {
+        assistant = null;
+        break;
+      }
+      const { AnthropicListingAssistant } = await import("./anthropic-assistant");
+      assistant = new AnthropicListingAssistant();
+      break;
+    }
     default:
-      throw new Error(`AI_PROVIDER "${process.env.AI_PROVIDER}" não implementado`);
+      throw new Error(`AI_PROVIDER "${process.env.AI_PROVIDER}" não suportado`);
   }
+  return assistant;
 }
 
+export function setListingAssistant(a: ListingAssistant | null) {
+  assistant = a;
+}
+
+/** Ligado apenas com provedor escolhido E credencial presente (sem chave, o botão nem aparece). */
 export function isListingAssistantEnabled() {
-  return Boolean(process.env.AI_PROVIDER);
+  if (process.env.AI_PROVIDER === "anthropic") return Boolean(process.env.ANTHROPIC_API_KEY);
+  return false;
 }

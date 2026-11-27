@@ -24,8 +24,13 @@ const serverSchema = z
     SUPABASE_STORAGE_BUCKET: z.string().default("product-images"),
     PAYMENT_PROVIDER: z.enum(["simulated", "mercadopago"]).default("simulated"),
     SHIPPING_PROVIDER: z.enum(["simulated", "melhorenvio"]).default("simulated"),
+    AI_PROVIDER: z.enum(["", "anthropic"]).default(""),
+    AI_MODEL: z.string().optional(),
+    ANTHROPIC_API_KEY: z.string().optional(),
   })
   .superRefine((env, ctx) => {
+    if (env.AI_PROVIDER === "anthropic" && !env.ANTHROPIC_API_KEY && env.APP_ENV === "production")
+      ctx.addIssue({ code: "custom", path: ["ANTHROPIC_API_KEY"], message: "ANTHROPIC_API_KEY obrigatória com AI_PROVIDER=anthropic" });
     if (env.APP_ENV !== "production") return;
     // Em produção real, nenhuma simulação é permitida.
     if (env.PAYMENT_PROVIDER === "simulated")

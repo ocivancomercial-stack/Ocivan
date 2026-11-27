@@ -79,3 +79,23 @@ export async function reportProductAction(_prev: ReportState, formData: FormData
   if (!r.ok) return { ok: false, message: r.error };
   return { ok: true, message: "Denúncia enviada. Nossa equipe vai analisar. Obrigado!" };
 }
+
+export type SuggestListingState = { ok: true; suggestion: import("./ai-suggest").ListingSuggestionResult } | { ok: false; message: string };
+
+export async function suggestListingAction(formData: FormData): Promise<SuggestListingState> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, message: "Entre novamente." };
+  const photo = formData.get("photo");
+  if (!(photo instanceof File) || photo.size === 0) return { ok: false, message: "Adicione uma foto primeiro." };
+  if (photo.size > IMAGE_RULES.maxBytes) return { ok: false, message: "Foto muito grande." };
+  const { suggestListingFromPhoto } = await import("./ai-suggest");
+  const { AssistantError } = await import("@/services/ai/listing-assistant");
+  const { ImageValidationError } = await import("@/services/images/process");
+  try {
+    return { ok: true, suggestion: await suggestListingFromPhoto(user.id, Buffer.from(await photo.arrayBuffer())) };
+  } catch (e) {
+    if (e instanceof AssistantError || e instanceof ImageValidationError) return { ok: false, message: e.message };
+    logger.error("ai.suggest_failed", { userId: user.id, error: String(e) });
+    return { ok: false, message: "Não foi possível gerar sugestões agora. Preencha manualmente." };
+  }
+}

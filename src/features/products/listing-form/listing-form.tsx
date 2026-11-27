@@ -12,6 +12,7 @@ import { productDetailsSchema, productPriceSchema } from "@/schemas/product";
 import { COLORS, CONDITION_LABEL, CONDITION_OPTIONS, SIZE_SUGGESTIONS } from "../constants";
 import { saveListingAction } from "../actions";
 import { PhotoPicker, type PhotoItem } from "./photo-picker";
+import { AiSuggestPanel } from "./ai-suggest-panel";
 
 type Category = { id: string; name: string; slug: string; children: { id: string; name: string; slug: string }[] };
 type Brand = { id: string; name: string };
@@ -28,10 +29,10 @@ const STEP_OF_FIELD: Record<string, number> = {
 };
 
 export function ListingForm({
-  categories, brands, feeBps, initial, initialPhotos = [], productId, productStatus, defaultCity,
+  categories, brands, feeBps, initial, initialPhotos = [], productId, productStatus, defaultCity, aiEnabled = false,
 }: {
   categories: Category[]; brands: Brand[]; feeBps: number; initial?: ListingValues; initialPhotos?: PhotoItem[];
-  productId?: string; productStatus?: string; defaultCity: string;
+  productId?: string; productStatus?: string; defaultCity: string; aiEnabled?: boolean;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -150,6 +151,28 @@ export function ListingForm({
 
       {step === 1 && (
         <div className="space-y-4">
+          {aiEnabled && (
+            <AiSuggestPanel
+              photo={photos[0]}
+              labels={{
+                category: (id) => {
+                  const r = id ? rootOf.get(id) : undefined;
+                  return r ? `${r.name} › ${r.children.find((c) => c.id === id)?.name}` : undefined;
+                },
+                brand: (id) => brands.find((b) => b.id === id)?.name,
+              }}
+              onApply={(sug, fields) => {
+                if (fields.has("title") && sug.title) set("title", sug.title);
+                if (fields.has("description") && sug.description) set("description", sug.description);
+                if (fields.has("category") && sug.categoryId && sug.rootCategoryId) {
+                  setRootId(sug.rootCategoryId);
+                  set("categoryId", sug.categoryId);
+                }
+                if (fields.has("brand") && sug.brandId) set("brandId", sug.brandId);
+                if (fields.has("color") && sug.color) set("color", sug.color);
+              }}
+            />
+          )}
           <Field label="Título" name="title" error={errors.title} hint="Ex.: Jaqueta jeans Levi's azul clara">
             <Input name="title" value={v.title} maxLength={80} onChange={(x) => set("title", x.target.value)} invalid={!!e("title")} />
           </Field>

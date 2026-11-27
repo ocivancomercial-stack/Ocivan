@@ -40,3 +40,11 @@
 ## Relato de vulnerabilidades
 
 Canal provisório: suporte@repassaai.com.br (a confirmar).
+
+## IA (assistente de anúncio)
+
+- `ANTHROPIC_API_KEY` só no servidor; nunca exposta ao navegador.
+- Fotos enviadas ao provedor apenas quando o vendedor clica em "Sugerir" (reprocessadas, sem EXIF/GPS).
+- Texto dentro da imagem tratado como conteúdo, não instrução; saída validada por schema e filtrada contra o catálogo.
+- Rate limit por vendedor para conter custo e abuso.
+- A política de privacidade deve mencionar o envio opcional de fotos a provedor de IA (pendente de revisão jurídica).

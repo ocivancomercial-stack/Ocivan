@@ -23,7 +23,7 @@ Arquitetura, stack, estrutura de pastas, modelo de dados e riscos (ver ARQUITETU
 - Busca full-text em português sem acento e com prefixo (+ marca), filtros reais no banco (categoria, subcategoria, marca, tamanho, estado, preço, cidade, distância aproximada), ordenação e paginação.
 - Página do produto: galeria, detalhes, defeitos, vendedor (nome abreviado, cidade, avaliação), semelhantes, favoritar, denunciar.
 - Favoritos, vitrine Explorar (perto de você, recentes, destaques, sugestões), landing com produtos reais, foto de perfil.
-- Assistente de anúncio por IA: interface desacoplada e sanitização das sugestões; **nenhum provedor ligado** (aguarda decisão de fornecedor/custo).
+- Assistente de anúncio por IA com Claude (`claude-opus-5-5`): sugere título, categoria, marca (só com logotipo legível), cor e descrição a partir da foto de capa; o vendedor revisa e escolhe o que aplicar. Ativado com `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY`.
 - 119 testes.
 - Pendências conhecidas: botão "Comprar agora" desabilitado até a Etapa 4; fila de moderação no admin (Etapa 4).
 

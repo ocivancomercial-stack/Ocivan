@@ -16,7 +16,9 @@ Validadas em `src/lib/env.ts`. Modelo em `.env.example`. **Nunca** versione `.en
 | `RESEND_API_KEY` | se `resend` | Chave da Resend. |
 | `STORAGE_DRIVER` | não | `local` (dev) · `supabase` (Etapa 3). |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_STORAGE_BUCKET` | se `supabase` | Storage de imagens. A service role key é **somente servidor**. |
-| `AI_PROVIDER` | não | Vazio = assistente de anúncio desligado (padrão). Nenhum provedor implementado ainda. |
+| `AI_PROVIDER` | não | `anthropic` liga o assistente de anúncio (Claude); vazio = desligado. |
+| `ANTHROPIC_API_KEY` | se `anthropic` | Chave da API da Anthropic (console.anthropic.com). Somente servidor. Sem ela o botão de IA não aparece. |
+| `AI_MODEL` | não | Modelo do assistente. Padrão `claude-opus-5-5`. |
 | `PAYMENT_PROVIDER` | não | `simulated` · `mercadopago` (Etapa 5). |
 | `SHIPPING_PROVIDER` | não | `simulated` · `melhorenvio` (Etapa 5). |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | não | Cria o primeiro admin no seed. Remova após uso. |
