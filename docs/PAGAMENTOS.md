@@ -1,6 +1,26 @@
 # Pagamentos
 
-> Status: **fluxo completo implementado com provedor SIMULADO (Etapa 4). Mercado Pago real: Etapa 5.** Nenhum dinheiro real é processado hoje.
+> Status: **integração Mercado Pago implementada (Etapa 5) e testada contra o simulador ([modelo de teste](MODELO_DE_TESTE.md)). Falta homologar com conta real.**
+
+## Integração Mercado Pago (`src/services/payments/mercadopago.ts`)
+
+Fontes oficiais consultadas em nov/2026: página de Webhooks e de OAuth em mercadopago.com.br/developers e o
+código-fonte do SDK oficial `mercadopago` 3.6.2 (endpoints, campos e validação de assinatura).
+
+| Etapa | Chamada |
+|---|---|
+| Vendedor conecta a conta | `https://auth.mercadopago.com/authorization?client_id&response_type=code&platform_id=mp&state&redirect_uri&code_challenge&code_challenge_method=S256` → `POST /oauth/token` (`grant_type=authorization_code`, `code_verifier`; `test_token` em teste). Tokens cifrados em `seller_payment_accounts`; renovação com `grant_type=refresh_token` (token vale 180 dias). |
+| Pagamento | `POST /checkout/preferences/` com o **token do vendedor**: `items` (produtos + frete), `external_reference` = id do pedido, `marketplace_fee` = comissão, `notification_url`, `back_urls`, `auto_return`, `expires`/`expiration_date_to` = prazo da reserva, `X-Idempotency-Key`. O comprador vai para `init_point` (`sandbox_init_point` em teste). |
+| Confirmação | Webhook → valida `x-signature` (`ts=…,v1=…`; HMAC-SHA256 de `id:{data.id};request-id:{x-request-id};ts:{ts};` com a assinatura secreta; tolerância 5 min) → `GET /v1/payments/{id}` com o token do vendedor (identificado pelo `user_id` do webhook). |
+| Reembolso | `POST /v1/payments/{id}/refunds` (corpo vazio = total) com `X-Idempotency-Key`. |
+| Status | `pending`/`in_process` → PENDING · `authorized` · `approved` · `in_mediation` · `rejected` · `cancelled` · `refunded` · `charged_back`. |
+
+**Para homologar:** criar a aplicação em "Suas integrações", cadastrar a Redirect URL
+(`<APP_URL>/api/integrations/mercadopago/callback`), configurar Webhooks (tópico *Pagamentos*,
+URL `<APP_URL>/api/webhooks/payments/mercadopago`), copiar a assinatura secreta, gerar usuários de teste
+(vendedor e comprador), solicitar a habilitação do modelo Marketplace (split via `marketplace_fee`).
+
+Anteriormente (Etapa 4): fluxo completo com provedor SIMULADO interno, mantido para desenvolvimento rápido.
 
 ## Fluxo implementado
 

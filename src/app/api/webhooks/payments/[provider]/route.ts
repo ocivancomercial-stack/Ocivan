@@ -14,7 +14,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ provide
 
   const body = await req.text();
   if (body.length > 64_000) return NextResponse.json({ error: "payload" }, { status: 413 });
-  const verified = await provider.verifyWebhook({ headers: req.headers, body });
+  const verified = await provider.verifyWebhook({ headers: req.headers, body, url: req.url });
+  if (verified === "ignore") return NextResponse.json({ ok: true, ignored: true });
   if (!verified) {
     logger.warn("payment.webhook_invalid_signature", { provider: name });
     return NextResponse.json({ error: "signature" }, { status: 401 });

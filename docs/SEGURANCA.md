@@ -48,6 +48,15 @@
 
 Canal provisório: suporte@repassaai.com.br (a confirmar).
 
+## Integrações (Etapa 5)
+
+- OAuth com `state` + PKCE (Mercado Pago) guardados em cookie httpOnly cifrado de 10 minutos.
+- Tokens de vendedores e da plataforma cifrados (AES-256-GCM); renovação automática.
+- Webhooks: assinatura verificada em tempo constante, anti-replay (5 min) no Mercado Pago, idempotência por evento.
+- Pagamento consultado com o token do vendedor dono; um vendedor não lê pagamentos de outro (testado).
+- CPF validado, armazenado só em dígitos, exibido mascarado e enviado apenas à transportadora.
+- Simuladores desligados em produção (validação de ambiente + 404).
+
 ## IA (assistente de anúncio)
 
 - `ANTHROPIC_API_KEY` só no servidor; nunca exposta ao navegador.

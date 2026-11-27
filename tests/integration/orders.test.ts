@@ -173,8 +173,8 @@ describe("pagamento e webhooks", () => {
 
   it("assinatura de webhook inválida é recusada", async () => {
     const body = JSON.stringify({ paymentId: "x", eventId: "y" });
-    expect(await pay.verifyWebhook({ headers: new Headers({ "x-simulated-signature": "falsa" }), body })).toBeNull();
-    expect(await pay.verifyWebhook({ headers: new Headers({ "x-simulated-signature": pay.sign(body) }), body })).toEqual({ providerPaymentId: "x", eventKey: "y" });
+    expect(await pay.verifyWebhook({ headers: new Headers({ "x-simulated-signature": "falsa" }), body, url: "http://x" })).toBeNull();
+    expect(await pay.verifyWebhook({ headers: new Headers({ "x-simulated-signature": pay.sign(body) }), body, url: "http://x" })).toEqual({ providerPaymentId: "x", eventKey: "y" });
   });
 
   it("pagamento aprovado após expiração é estornado automaticamente", async () => {

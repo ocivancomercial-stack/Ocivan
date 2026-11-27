@@ -15,6 +15,7 @@ export const ADMIN_LINKS = [
   { href: "/admin/marcas", label: "Marcas" },
   { href: "/admin/cupons", label: "Cupons" },
   { href: "/admin/configuracoes", label: "Configurações" },
+  { href: "/admin/integracoes", label: "Integrações" },
   { href: "/admin/relatorios", label: "Relatórios" },
 ];
 

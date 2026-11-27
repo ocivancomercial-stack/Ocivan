@@ -4,7 +4,9 @@ import { prisma } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { notify } from "@/lib/notify";
 import { getSetting } from "@/lib/settings";
-import { getShippingProvider } from "@/services/shipping";
+import { DEFAULT_DIMENSIONS, getShippingProvider, ShippingError, type PackageItem } from "@/services/shipping";
+import { getPaymentProvider } from "@/services/payments";
+import { normalizeCpf } from "@/lib/cpf";
 import { calculateOrderTotals } from "./pricing";
 import { canTransition } from "./status";
 
@@ -17,22 +19,41 @@ function orderCode() {
 
 /** Cotação de frete para os itens de um vendedor até um endereço do comprador. */
 export async function quoteShipping(buyerId: string, sellerId: string, addressId: string) {
-  const [address, items] = await Promise.all([
+  const [address, items, origin] = await Promise.all([
     prisma.address.findFirst({ where: { id: addressId, userId: buyerId } }),
-    prisma.cartItem.findMany({ where: { userId: buyerId, product: { sellerId } }, select: { product: { select: { city: true, weightGrams: true, localPickup: true, shippingAvailable: true } } } }),
+    prisma.cartItem.findMany({
+      where: { userId: buyerId, product: { sellerId } },
+      select: { product: { select: { id: true, title: true, priceCents: true, city: true, weightGrams: true, localPickup: true, shippingAvailable: true, category: { select: { parent: { select: { slug: true } } } } } } },
+    }),
+    sellerOrigin(sellerId),
   ]);
   if (!address) throw new OrderError("Endereço inválido.");
   if (items.length === 0) throw new OrderError("Carrinho vazio para este vendedor.");
   const products = items.map((i) => i.product);
   const options = await getShippingProvider().quote({
     fromCity: products[0].city,
+    fromPostalCode: origin?.postalCode,
     toCity: address.city,
     toPostalCode: address.postalCode,
     weightGrams: products.reduce((s, p) => s + p.weightGrams, 0),
     allowsLocalPickup: products.every((p) => p.localPickup),
+    packages: products.map(toPackage),
+  }).catch((e) => {
+    if (e instanceof ShippingError) throw new OrderError(/endereço de envio/.test(e.message) ? "Este vendedor ainda não configurou o envio. Tente mais tarde." : "Não foi possível calcular o frete agora. Tente novamente.");
+    throw e;
   });
   const canShip = products.every((p) => p.shippingAvailable);
   return options.filter((o) => o.kind === "local" || canShip);
+}
+
+function toPackage(p: { id: string; title: string; priceCents: number; weightGrams: number; category: { parent: { slug: string } | null } }): PackageItem {
+  const dims = DEFAULT_DIMENSIONS[p.category.parent?.slug ?? "roupas"] ?? DEFAULT_DIMENSIONS.roupas;
+  return { id: p.id, name: p.title, ...dims, weightGrams: p.weightGrams, valueCents: p.priceCents };
+}
+
+/** Endereço de origem do vendedor (endereço principal) — nunca exibido ao comprador. */
+function sellerOrigin(sellerId: string) {
+  return prisma.address.findFirst({ where: { userId: sellerId }, orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }] });
 }
 
 /** Libera reservas vencidas: pedido cancelado, peça volta a ficar ativa. Idempotente. */
@@ -65,7 +86,7 @@ async function cancelPendingOrder(orderId: string, reason: string, actorId: stri
  */
 export async function createOrderFromCart(
   buyerId: string,
-  input: { sellerId: string; addressId: string; shippingOptionId: string; couponCode?: string },
+  input: { sellerId: string; addressId: string; shippingOptionId: string; couponCode?: string; cpf?: string },
 ) {
   await releaseExpiredReservations();
   const [address, options, feeBps, minutes] = await Promise.all([
@@ -77,6 +98,18 @@ export async function createOrderFromCart(
   if (!address) throw new OrderError("Endereço inválido.");
   const shipping = options.find((o) => o.id === input.shippingOptionId);
   if (!shipping) throw new OrderError("Escolha uma forma de entrega válida.");
+
+  if (getPaymentProvider().requiresSellerAccount) {
+    const account = await prisma.sellerPaymentAccount.findUnique({ where: { userId: input.sellerId } });
+    if (!account) throw new OrderError("Este vendedor ainda não habilitou o recebimento de pagamentos. Tente mais tarde.");
+  }
+  // Transportadoras exigem CPF do destinatário para emitir a etiqueta.
+  if (getShippingProvider().supportsLabels && shipping.kind === "carrier") {
+    const buyer = await prisma.user.findUniqueOrThrow({ where: { id: buyerId }, select: { cpf: true } });
+    const cpf = buyer.cpf ?? (input.cpf ? normalizeCpf(input.cpf) : null);
+    if (!cpf) throw new OrderError("Informe um CPF válido — a transportadora exige para emitir a etiqueta.");
+    if (!buyer.cpf) await prisma.user.update({ where: { id: buyerId }, data: { cpf } });
+  }
 
   const coupon = input.couponCode
     ? await prisma.coupon.findFirst({
@@ -253,4 +286,91 @@ export async function createReview(userId: string, orderId: string, rating: numb
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") throw new OrderError("Você já avaliou este pedido.");
     throw e;
   }
+}
+
+
+// ───────────── Etiquetas e rastreio (provedor de frete com etiquetas) ─────────────
+
+const SHIPPING_STATUS_MAP: Record<string, "LABEL_GENERATED" | "POSTED" | "IN_TRANSIT" | "DELIVERED" | "RETURNED" | "CANCELED"> = {
+  released: "LABEL_GENERATED", generated: "LABEL_GENERATED", received: "POSTED", posted: "POSTED",
+  delivered: "DELIVERED", undelivered: "RETURNED", canceled: "CANCELED", cancelled: "CANCELED", paused: "IN_TRANSIT", suspended: "IN_TRANSIT",
+};
+
+/** Vendedor gera a etiqueta do pedido pago (compra no provedor de frete pela conta da plataforma). */
+export async function generateLabel(sellerId: string, orderId: string) {
+  const provider = getShippingProvider();
+  if (!provider.supportsLabels || !provider.createLabel) throw new OrderError("Geração de etiqueta indisponível. Informe o rastreio manualmente.");
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, sellerId },
+    include: {
+      items: { include: { product: { select: { id: true, title: true, priceCents: true, weightGrams: true, category: { select: { parent: { select: { slug: true } } } } } } } },
+      shipments: true, buyer: { select: { name: true, email: true, phone: true, cpf: true } }, seller: { select: { name: true, email: true, phone: true, cpf: true } },
+    },
+  });
+  if (!order) throw new OrderError("Pedido não encontrado.");
+  if (order.status !== "PAID") throw new OrderError("A etiqueta só pode ser gerada para pedidos pagos aguardando envio.");
+  if (!order.shippingServiceId?.startsWith("me-")) throw new OrderError("Este pedido não usa envio por transportadora.");
+  if (order.shipments.some((s) => s.labelUrl && s.status !== "CANCELED")) throw new OrderError("A etiqueta deste pedido já foi gerada.");
+  if (!order.seller.cpf) throw new OrderError("Cadastre seu CPF no perfil para emitir etiquetas.");
+  if (!order.buyer.cpf) throw new OrderError("O comprador não informou CPF. Contate o suporte.");
+  const origin = await sellerOrigin(sellerId);
+  if (!origin) throw new OrderError("Cadastre seu endereço de envio no perfil.");
+  const to = order.shippingAddress as { recipient?: string | null; street: string; number: string; complement?: string | null; neighborhood: string; city: string; state: string; postalCode: string };
+
+  const label = await provider.createLabel({
+    orderCode: order.code,
+    serviceId: order.shippingServiceId,
+    from: { name: order.seller.name, phone: order.seller.phone, email: order.seller.email, document: order.seller.cpf, address: origin.street, number: origin.number, complement: origin.complement, district: origin.neighborhood, city: origin.city, stateAbbr: origin.state, postalCode: origin.postalCode },
+    to: { name: to.recipient || order.buyer.name, phone: order.buyer.phone, email: order.buyer.email, document: order.buyer.cpf, address: to.street, number: to.number, complement: to.complement, district: to.neighborhood, city: to.city, stateAbbr: to.state, postalCode: to.postalCode },
+    packages: order.items.map((i) => toPackage(i.product)),
+  });
+  await prisma.$transaction([
+    prisma.shipment.create({
+      data: {
+        orderId, provider: provider.name, providerShipmentId: label.providerShipmentId, serviceName: order.shippingServiceName,
+        trackingCode: label.trackingCode ?? null, labelUrl: label.labelUrl, status: "LABEL_GENERATED", shippingPriceCents: order.shippingPriceCents, isSimulated: label.isSimulated,
+        events: { create: { status: "LABEL_GENERATED", description: label.isSimulated ? "Etiqueta gerada no SIMULADOR (não é etiqueta real)" : "Etiqueta gerada" } },
+      },
+    }),
+    prisma.order.update({ where: { id: orderId }, data: { shippingStatus: "LABEL_GENERATED" } }),
+  ]);
+  await audit({ actorId: sellerId, action: "shipment.label", entityType: "order", entityId: orderId, metadata: { provider: provider.name, simulated: label.isSimulated } });
+  return label;
+}
+
+/** Aplica atualização de status vinda do provedor de frete (webhook ou consulta). Idempotente. */
+export async function applyShippingUpdate(providerShipmentId: string, providerStatus: string, trackingCode?: string | null) {
+  const shipment = await prisma.shipment.findFirst({ where: { providerShipmentId }, include: { order: true } });
+  if (!shipment) return "ignored" as const;
+  const status = SHIPPING_STATUS_MAP[providerStatus];
+  if (!status) return "ignored" as const;
+  const order = shipment.order;
+  if (shipment.status !== status || (trackingCode && trackingCode !== shipment.trackingCode)) {
+    await prisma.shipment.update({
+      where: { id: shipment.id },
+      data: { status, trackingCode: trackingCode ?? shipment.trackingCode, ...(shipment.status !== status ? { events: { create: { status, description: `Transportadora: ${providerStatus}` } } } : {}) },
+    });
+  }
+  const now = new Date();
+  if ((status === "POSTED" || status === "IN_TRANSIT") && order.status === "PAID") {
+    await prisma.order.updateMany({ where: { id: order.id, status: "PAID" }, data: { status: "SHIPPED", shippingStatus: status, shippedAt: now } });
+    await notify(order.buyerId, "Seu pedido foi postado", `Pedido ${order.code} a caminho${trackingCode ? ` — rastreio ${trackingCode}` : ""}.`, `/pedidos/${order.id}`);
+  } else if (status === "DELIVERED" && ["PAID", "SHIPPED"].includes(order.status)) {
+    await prisma.order.updateMany({ where: { id: order.id, status: { in: ["PAID", "SHIPPED"] } }, data: { status: "DELIVERED", shippingStatus: "DELIVERED", deliveredAt: now, ...(order.shippedAt ? {} : { shippedAt: now }) } });
+    await notify(order.buyerId, "Pedido entregue", `Pedido ${order.code} entregue. Confirme o recebimento ou relate um problema.`, `/pedidos/${order.id}`);
+  } else {
+    await prisma.order.update({ where: { id: order.id }, data: { shippingStatus: status } });
+  }
+  return "updated" as const;
+}
+
+/** Consulta o rastreio no provedor (botão "Atualizar rastreio"). */
+export async function refreshTracking(userId: string, orderId: string) {
+  const provider = getShippingProvider();
+  const order = await prisma.order.findFirst({ where: { id: orderId, OR: [{ sellerId: userId }, { buyerId: userId }] }, include: { shipments: true } });
+  if (!order) throw new OrderError("Pedido não encontrado.");
+  const ids = order.shipments.filter((s) => s.provider === provider.name && s.providerShipmentId).map((s) => s.providerShipmentId!);
+  if (!ids.length || !provider.track) return;
+  const info = await provider.track(ids);
+  for (const [id, t] of Object.entries(info)) await applyShippingUpdate(id, t.status, t.trackingCode);
 }

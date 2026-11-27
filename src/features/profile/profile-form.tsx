@@ -8,7 +8,7 @@ import { SERVED_CITY_NAMES } from "@/lib/regions";
 import { initialFormState } from "@/types/forms";
 import { updateProfileAction } from "./actions";
 
-export function ProfileForm({ user }: { user: { name: string; phone: string | null; city: string | null } }) {
+export function ProfileForm({ user, cpfMasked }: { user: { name: string; phone: string | null; city: string | null }; cpfMasked?: string | null }) {
   const [state, action] = useActionState(updateProfileAction, initialFormState);
   const e = state.errors ?? {};
   const v = state.values ?? {};
@@ -30,6 +30,9 @@ export function ProfileForm({ user }: { user: { name: string; phone: string | nu
           </Select>
         </Field>
       </div>
+      <Field label="CPF" name="cpf" error={e.cpf} hint={cpfMasked ? `Cadastrado: ${cpfMasked}. Preencha só para alterar.` : "Exigido pelas transportadoras para emitir etiquetas. Nunca é exibido publicamente."}>
+        <Input name="cpf" inputMode="numeric" autoComplete="off" placeholder="000.000.000-00" defaultValue={v.cpf ?? ""} invalid={!!e.cpf} />
+      </Field>
       <SubmitButton pendingText="Salvando…">Salvar alterações</SubmitButton>
     </form>
   );

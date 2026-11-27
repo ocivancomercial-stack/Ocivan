@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { startPaymentAction } from "@/features/orders/actions";
-import { CancelForm, DisputeForm, ReceiveForm, ReviewForm, ShipForm } from "@/features/orders/components/order-actions";
+import { CancelForm, DisputeForm, LabelForm, ReceiveForm, ReviewForm, ShipForm, TrackForm } from "@/features/orders/components/order-actions";
+import { getShippingProvider } from "@/services/shipping";
+import { mocksEnabled } from "@/mocks/common";
+import { meAdvanceAction } from "@/mocks/actions";
 import { getOrderForUser } from "@/features/orders/service";
 import { ORDER_STATUS_LABEL, PAYMENT_STATUS_LABEL } from "@/features/orders/status";
 import { simulatePaymentAction } from "@/features/payments/simulation-actions";
@@ -42,6 +45,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const isLocal = order.shippingServiceId === "local-pickup";
   const myReview = order.reviews.find((r) => r.reviewerId === user.id);
   const expired = order.expiresAt && order.expiresAt < new Date();
+  const shippingProvider = getShippingProvider();
+  const labelMode = shippingProvider.supportsLabels && !!order.shippingServiceId?.startsWith("me-");
+  const label = order.shipments.find((s) => s.labelUrl && s.status !== "CANCELED");
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
@@ -84,6 +90,12 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                   <input type="hidden" name="orderId" value={order.id} />
                   <SubmitButton size="lg" className="w-full" pendingText="Abrindo pagamento…">Pagar {formatBRL(order.totalCents)}</SubmitButton>
                 </form>
+              ) : pendingPayment.provider !== "simulated" ? (
+                <form action={startPaymentAction} className="space-y-2">
+                  <input type="hidden" name="orderId" value={order.id} />
+                  <p className="text-sm text-muted">Pagamento iniciado. Se ainda não concluiu, continue no {pendingPayment.isSimulated ? "simulador do Mercado Pago" : "Mercado Pago"}. A confirmação chega automaticamente.</p>
+                  <SubmitButton size="lg" className="w-full" pendingText="Abrindo…">Continuar pagamento</SubmitButton>
+                </form>
               ) : pendingPayment.isSimulated && pendingPayment.providerPaymentId && simulationAllowed() ? (
                 <div className="space-y-3 rounded-field border-2 border-dashed border-accent bg-accent-50 p-4">
                   <p className="flex items-center gap-2 text-sm font-bold text-[#7a5410]"><FlaskConical className="size-4" /> PAGAMENTO SIMULADO — ambiente de desenvolvimento</p>
@@ -114,7 +126,18 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         <Card className="space-y-3 p-5">
           <h2 className="font-bold">Envie o produto</h2>
           <p className="text-sm text-muted">Entrega: {order.shippingServiceName}. Embale bem e informe o envio.</p>
-          <ShipForm orderId={order.id} isLocal={isLocal} />
+          {labelMode ? (
+            label ? (
+              <div className="space-y-2 text-sm">
+                <p>Etiqueta pronta{label.isSimulated && <strong className="text-[#7a5410]"> (SIMULADA — não vale para postagem)</strong>}. Imprima, cole no pacote e poste.</p>
+                <a href={label.labelUrl!} target="_blank" rel="noopener noreferrer" className="font-semibold text-brand underline">Abrir etiqueta</a>
+              </div>
+            ) : (
+              <LabelForm orderId={order.id} />
+            )
+          ) : (
+            <ShipForm orderId={order.id} isLocal={isLocal} />
+          )}
         </Card>
       )}
 
@@ -174,7 +197,14 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           )}
           {order.shipments.map((s) => (
             <div key={s.id} className="mt-3 border-t border-line pt-3">
-              <p className="font-semibold">{s.serviceName}{s.trackingCode && ` · Rastreio ${s.trackingCode}`}</p>
+              <p className="font-semibold">{s.serviceName}{s.trackingCode && ` · Rastreio ${s.trackingCode}`}{s.isSimulated && <span className="ml-1 text-xs text-[#7a5410]">(simulado)</span>}</p>
+              {s.provider !== "manual" && ["LABEL_GENERATED", "POSTED", "IN_TRANSIT"].includes(s.status) && <TrackForm orderId={order.id} />}
+              {s.isSimulated && mocksEnabled() && role !== "buyer" && ["LABEL_GENERATED", "POSTED"].includes(s.status) && (
+                <form action={meAdvanceAction} className="mt-1">
+                  <input type="hidden" name="shipmentId" value={s.id} />
+                  <Button size="sm" variant="outline">Simulador: transportadora {s.status === "LABEL_GENERATED" ? "recebeu a postagem" : "entregou"}</Button>
+                </form>
+              )}
               <ul className="mt-1 space-y-1 text-muted">
                 {s.events.map((e) => <li key={e.id}>{e.occurredAt.toLocaleString("pt-BR")} — {e.description}</li>)}
               </ul>

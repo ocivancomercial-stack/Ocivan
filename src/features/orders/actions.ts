@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/session";
 import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import type { ShippingOption } from "@/services/shipping";
-import { cancelOrderByBuyer, confirmReceipt, createOrderFromCart, createReview, markShipped, openDispute, OrderError, quoteShipping } from "./service";
+import { cancelOrderByBuyer, confirmReceipt, createOrderFromCart, createReview, generateLabel, markShipped, openDispute, OrderError, quoteShipping, refreshTracking } from "./service";
 import { startPayment } from "@/features/payments/service";
 
 type Result = { ok: boolean; message?: string };
@@ -38,6 +38,7 @@ export async function placeOrderAction(_prev: Result, formData: FormData): Promi
       addressId: String(formData.get("addressId") ?? ""),
       shippingOptionId: String(formData.get("shippingOptionId") ?? ""),
       couponCode: String(formData.get("couponCode") ?? "").trim() || undefined,
+      cpf: String(formData.get("cpf") ?? "") || undefined,
     });
     orderId = order.id;
   } catch (e) {
@@ -81,6 +82,10 @@ export async function orderAction(_prev: Result, formData: FormData): Promise<Re
       return run((u) => confirmReceipt(u, orderId), orderId, "Não foi possível confirmar.");
     case "dispute":
       return run((u) => openDispute(u, orderId, String(formData.get("reason") ?? "")), orderId, "Não foi possível abrir a disputa.");
+    case "label":
+      return run((u) => generateLabel(u, orderId), orderId, "Não foi possível gerar a etiqueta.");
+    case "track":
+      return run((u) => refreshTracking(u, orderId), orderId, "Não foi possível consultar o rastreio.");
     case "review":
       return run((u) => createReview(u, orderId, Number(formData.get("rating")), String(formData.get("comment") ?? "")), orderId, "Não foi possível avaliar.");
     default:

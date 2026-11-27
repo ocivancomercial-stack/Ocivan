@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LogOut, MapPin, Package, ShieldCheck, Star, Store, Tag } from "lucide-react";
+import { LogOut, MapPin, Package, ShieldCheck, Star, Store, Tag, Wallet } from "lucide-react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,12 +11,14 @@ import { AvatarForm } from "@/features/profile/avatar-form";
 import { ProfileForm } from "@/features/profile/profile-form";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { maskCpf } from "@/lib/cpf";
 
 export const metadata: Metadata = { title: "Meu perfil", robots: { index: false } };
 
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const user = await requireUser("/perfil");
   const { bemvindo } = await searchParams;
+  const { cpf } = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { cpf: true } });
   const [addresses, ratings] = await Promise.all([
     prisma.address.findMany({ where: { userId: user.id }, orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }] }),
     prisma.review.aggregate({ where: { reviewedUserId: user.id }, _avg: { rating: true }, _count: true }),
@@ -26,6 +28,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     { href: "/vender/anuncios", label: "Meus anúncios", icon: Tag },
     { href: "/perfil/compras", label: "Minhas compras", icon: Package },
     { href: "/perfil/vendas", label: "Painel do vendedor", icon: Store },
+    { href: "/perfil/recebimentos", label: "Recebimentos", icon: Wallet },
     { href: "/privacidade/meus-dados", label: "Meus dados (LGPD)", icon: ShieldCheck },
   ];
 
@@ -47,7 +50,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         </div>
       </div>
 
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {shortcuts.map((s) => (
           <li key={s.href}>
             <Link href={s.href} className="flex items-center gap-3 rounded-card bg-surface p-4 shadow-card hover:ring-2 hover:ring-brand-100">
@@ -60,7 +63,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
       <Card className="space-y-4 p-6">
         <h2 className="text-lg font-bold">Dados pessoais</h2>
-        <ProfileForm user={user} />
+        <ProfileForm user={user} cpfMasked={cpf ? maskCpf(cpf) : null} />
       </Card>
 
       <Card id="enderecos" className="space-y-4 p-6">

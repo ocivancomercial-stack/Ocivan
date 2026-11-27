@@ -19,8 +19,19 @@ Validadas em `src/lib/env.ts`. Modelo em `.env.example`. **Nunca** versione `.en
 | `AI_PROVIDER` | não | `anthropic` liga o assistente de anúncio (Claude); vazio = desligado. |
 | `ANTHROPIC_API_KEY` | se `anthropic` | Chave da API da Anthropic (console.anthropic.com). Somente servidor. Sem ela o botão de IA não aparece. |
 | `AI_MODEL` | não | Modelo do assistente. Padrão `claude-opus-5-5`. |
-| `PAYMENT_PROVIDER` | não | `simulated` · `mercadopago` (Etapa 5). |
-| `SHIPPING_PROVIDER` | não | `simulated` · `melhorenvio` (Etapa 5). |
+| `PAYMENT_PROVIDER` | não | `simulated` (interno) · `mercadopago`. |
+| `SHIPPING_PROVIDER` | não | `simulated` (interno) · `melhorenvio`. |
+| `MOCK_PROVIDERS` | não | `1` liga os simuladores `/api/mock/*` (modelo de teste). Proibido em produção. |
+| `MERCADOPAGO_CLIENT_ID` / `MERCADOPAGO_CLIENT_SECRET` | se `mercadopago` | Credenciais da aplicação (OAuth dos vendedores). |
+| `MERCADOPAGO_WEBHOOK_SECRET` | se `mercadopago` | Assinatura secreta dos webhooks (valida `x-signature`). |
+| `MERCADOPAGO_ACCESS_TOKEN` | não | Token da conta da plataforma (enviado nas chamadas de OAuth, como o SDK oficial). |
+| `MERCADOPAGO_TEST_MODE` | não | `1` = credenciais de teste. Proibido em produção. |
+| `MERCADOPAGO_API_URL` / `MERCADOPAGO_AUTH_URL` | não | Só para apontar ao simulador. Em produção, apenas as URLs oficiais. |
+| `MELHORENVIO_CLIENT_ID` / `MELHORENVIO_CLIENT_SECRET` | se `melhorenvio` | Aplicativo da Área Dev.; o secret também valida `X-ME-Signature`. |
+| `MELHORENVIO_SANDBOX` | não | `1` = sandbox oficial. Proibido em produção. |
+| `MELHORENVIO_USER_AGENT` | se `melhorenvio` | Obrigatório pela API: nome da aplicação + e-mail de contato. |
+| `MELHORENVIO_TOKEN` | não | Token pessoal (alternativa ao OAuth da plataforma). |
+| `MELHORENVIO_API_URL` | não | Só para o simulador. |
 | `CRON_SECRET` | produção | Segredo (32+ caracteres) da rotina `/api/cron/release-reservations`, chamada pelo Vercel Cron a cada 5 min. |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | não | Cria o primeiro admin no seed. Remova após uso. |
 | `TEST_DATABASE_URL` | testes | Banco exclusivo de testes (nome deve conter "test"). |

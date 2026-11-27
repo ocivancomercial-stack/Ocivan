@@ -1,10 +1,20 @@
 import { z } from "zod";
 import { citySchema, phoneSchema } from "@/schemas/auth";
+import { normalizeCpf } from "@/lib/cpf";
 
 export const profileSchema = z.object({
   name: z.string().trim().min(3, "Informe seu nome completo").max(100),
   phone: phoneSchema,
   city: citySchema,
+  cpf: z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      if (!v?.trim()) return undefined;
+      const n = normalizeCpf(v);
+      if (!n) ctx.addIssue({ code: "custom", message: "CPF inválido" });
+      return n ?? undefined;
+    }),
 });
 
 export const addressSchema = z.object({

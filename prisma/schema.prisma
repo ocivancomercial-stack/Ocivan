@@ -136,6 +136,8 @@ model User {
   emailVerified   Boolean    @default(false)
   avatar          String? // mapeado para "image" no Better Auth
   phone           String?
+  // CPF (apenas dígitos) — exigido pelas transportadoras para emitir etiquetas. Nunca exibido publicamente.
+  cpf             String?
   city            String?
   state           String?    @default("PR")
   role            Role       @default(USER)
@@ -717,4 +719,33 @@ model SimulatedPayment {
 
   @@index([externalRef])
   @@map("simulated_payments")
+}
+
+// Credenciais de integrações da PLATAFORMA (ex.: conta Melhor Envio que compra as etiquetas).
+// Tokens cifrados com AES-256-GCM (ENCRYPTION_KEY).
+model IntegrationCredential {
+  provider        String    @id // "melhorenvio"
+  accessTokenEnc  String
+  refreshTokenEnc String?
+  expiresAt       DateTime?
+  scope           String?
+  connectedById   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("integration_credentials")
+}
+
+// Estado dos SIMULADORES de provedores (modelo de teste do Mercado Pago e do Melhor Envio).
+// Só usado com MOCK_PROVIDERS=1 fora de produção.
+model MockProviderRecord {
+  id        String   @id @default(cuid())
+  provider  String // "mercadopago" | "melhorenvio"
+  kind      String // "preference" | "payment" | "oauth_code" | "order" ...
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([provider, kind])
+  @@map("mock_provider_records")
 }

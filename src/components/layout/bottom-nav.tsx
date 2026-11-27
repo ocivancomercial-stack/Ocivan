@@ -8,7 +8,7 @@ import { NAV_ITEMS, isActive } from "./nav-items";
 /** Navegação inferior — apenas no celular (md:hidden). */
 export function BottomNav() {
   const pathname = usePathname();
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/admin") || pathname.startsWith("/simulador")) return null;
 
   return (
     <nav

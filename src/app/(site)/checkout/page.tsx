@@ -9,6 +9,7 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { getSetting } from "@/lib/settings";
 import { formatBRL } from "@/lib/utils";
+import { getShippingProvider } from "@/services/shipping";
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
 
@@ -17,6 +18,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   const user = await requireUser(`/checkout${vendedor ? `?vendedor=${vendedor}` : ""}`);
   const group = (await getCart(user.id)).find((g) => g.sellerId === vendedor);
   if (!group) redirect("/carrinho");
+  const { cpf } = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { cpf: true } });
   const [addresses, minutes] = await Promise.all([
     prisma.address.findMany({ where: { userId: user.id }, orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }] }),
     getSetting("reservation_minutes"),
@@ -37,6 +39,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
             sellerId={group.sellerId}
             subtotalCents={subtotal}
             reservationMinutes={minutes}
+            needsCpf={!cpf && getShippingProvider().supportsLabels}
             addresses={addresses.map((a) => ({ id: a.id, label: `${a.street}, ${a.number}${a.complement ? ` — ${a.complement}` : ""} · ${a.neighborhood}, ${a.city}/${a.state} · CEP ${a.postalCode.replace(/(\d{5})(\d{3})/, "$1-$2")}` }))}
           />
         )}

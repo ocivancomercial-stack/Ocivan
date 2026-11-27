@@ -80,3 +80,19 @@ export function ReviewForm({ orderId, target }: { orderId: string; target: strin
     </ActionForm>
   );
 }
+
+export function LabelForm({ orderId }: { orderId: string }) {
+  return (
+    <ActionForm orderId={orderId} action="label">
+      <SubmitButton pendingText="Gerando etiqueta…">Gerar etiqueta de envio</SubmitButton>
+    </ActionForm>
+  );
+}
+
+export function TrackForm({ orderId }: { orderId: string }) {
+  return (
+    <ActionForm orderId={orderId} action="track">
+      <SubmitButton size="sm" variant="ghost" pendingText="Consultando…">Atualizar rastreio</SubmitButton>
+    </ActionForm>
+  );
+}

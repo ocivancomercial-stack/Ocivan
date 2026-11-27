@@ -11,7 +11,7 @@ import { placeOrderAction, quoteShippingAction } from "../actions";
 
 type Address = { id: string; label: string };
 
-export function CheckoutForm({ sellerId, addresses, subtotalCents, reservationMinutes }: { sellerId: string; addresses: Address[]; subtotalCents: number; reservationMinutes: number }) {
+export function CheckoutForm({ sellerId, addresses, subtotalCents, reservationMinutes, needsCpf = false }: { sellerId: string; addresses: Address[]; subtotalCents: number; reservationMinutes: number; needsCpf?: boolean }) {
   const [addressId, setAddressId] = useState(addresses[0]?.id ?? "");
   const [options, setOptions] = useState<ShippingOption[]>([]);
   const [optionId, setOptionId] = useState("");
@@ -71,6 +71,11 @@ export function CheckoutForm({ sellerId, addresses, subtotalCents, reservationMi
         ))}
       </section>
 
+      {needsCpf && shipping?.kind === "carrier" && (
+        <Field label="CPF do destinatário" name="cpf" hint="A transportadora exige para emitir a etiqueta. Fica salvo no seu perfil e nunca é exibido.">
+          <Input name="cpf" inputMode="numeric" placeholder="000.000.000-00" required />
+        </Field>
+      )}
       <Field label="Cupom (opcional)" name="couponCode">
         <Input name="couponCode" maxLength={30} className="uppercase" autoComplete="off" />
       </Field>

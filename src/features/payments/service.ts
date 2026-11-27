@@ -39,7 +39,7 @@ export async function startPayment(buyerId: string, orderId: string, provider: P
  */
 export async function processPaymentNotification(
   provider: PaymentProvider,
-  notification: { providerPaymentId: string; eventKey: string },
+  notification: { providerPaymentId: string; eventKey: string; accountRef?: string },
   payload: Prisma.InputJsonValue = {},
 ) {
   try {
@@ -52,7 +52,7 @@ export async function processPaymentNotification(
   }
 
   try {
-    const remote = await provider.getPayment(notification.providerPaymentId);
+    const remote = await provider.getPayment(notification.providerPaymentId, { accountRef: notification.accountRef });
     if (!remote) throw new Error("Pagamento não encontrado no provedor");
     const result = await applyProviderPayment(provider, remote);
     await prisma.webhookEvent.update({
@@ -168,6 +168,14 @@ export async function refundOrder(orderId: string, actorId: string, reason: stri
     prisma.order.update({ where: { id: orderId }, data: { status: "REFUNDED", paymentStatus: "REFUNDED", canceledAt: new Date(), cancelReason: reason } }),
     prisma.product.updateMany({ where: { id: { in: order.items.map((i) => i.productId) }, status: "SOLD" }, data: { status: "ACTIVE", soldAt: null } }),
   ]);
+  // Etiqueta comprada e ainda não postada: cancela no provedor de frete (melhor esforço).
+  const { getShippingProvider } = await import("@/services/shipping");
+  const shipping = getShippingProvider();
+  const labels = await prisma.shipment.findMany({ where: { orderId, provider: shipping.name, status: "LABEL_GENERATED", providerShipmentId: { not: null } } });
+  for (const l of labels) {
+    const r = shipping.cancelLabel ? await shipping.cancelLabel(l.providerShipmentId!, `Pedido ${order.code} cancelado`) : { ok: false };
+    await prisma.shipment.update({ where: { id: l.id }, data: { status: r.ok ? "CANCELED" : l.status, events: { create: { status: r.ok ? "CANCELED" : l.status, description: r.ok ? "Etiqueta cancelada" : "Falha ao cancelar etiqueta — verificar manualmente" } } } });
+  }
   await notify(order.sellerId, "Pedido cancelado e reembolsado", `Pedido ${order.code}: ${reason}. O anúncio voltou a ficar ativo.`, `/pedidos/${orderId}`);
   await notify(order.buyerId, "Reembolso solicitado", `Pedido ${order.code}: o estorno segue os prazos do meio de pagamento.`, `/pedidos/${orderId}`);
   await audit({ actorId, action: "order.refund", entityType: "order", entityId: orderId, metadata: { reason } });

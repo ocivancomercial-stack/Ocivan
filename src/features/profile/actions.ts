@@ -15,7 +15,8 @@ export async function updateProfileAction(_prev: FormState, formData: FormData):
   const parsed = profileSchema.safeParse(raw);
   if (!parsed.success) return { errors: zodErrors(parsed.error), values: echoValues(raw) };
 
-  await prisma.user.update({ where: { id: user.id }, data: { ...parsed.data, state: "PR" } });
+  const { cpf, ...rest } = parsed.data;
+  await prisma.user.update({ where: { id: user.id }, data: { ...rest, ...(cpf ? { cpf } : {}), state: "PR" } });
   await audit({ actorId: user.id, action: "profile.update", entityType: "user", entityId: user.id });
   revalidatePath("/perfil");
   return { ok: true, message: "Perfil atualizado." };

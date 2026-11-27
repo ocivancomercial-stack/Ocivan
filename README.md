@@ -13,8 +13,8 @@ Aplicação web responsiva (PWA na Etapa 6), com backend preparado para futuros 
 | 2 | Fundação: Next.js, Tailwind, PostgreSQL, Prisma, autenticação, layout | ✅ Concluída |
 | 3 | Marketplace: anúncios, fotos, busca, filtros, favoritos, página do produto | ✅ Concluída |
 | 4 | Operação: carrinho, checkout, pedidos, painel do vendedor, painel admin | ✅ Concluída |
-| 5 | Integrações: Mercado Pago, webhooks, Melhor Envio | ⏳ Próxima |
-| 6 | PWA, SEO, monitoramento, revisão de segurança, deploy | ⏳ |
+| 5 | Integrações: Mercado Pago, webhooks, Melhor Envio (+ modelo de teste) | ✅ Concluída (aguarda contas para homologar) |
+| 6 | PWA, SEO, monitoramento, revisão de segurança, deploy | ⏳ Próxima |
 
 Páginas ainda não implementadas exibem explicitamente "Em desenvolvimento — Etapa N". Nada é simulado como se estivesse pronto.
 Detalhes em [docs/ROADMAP.md](docs/ROADMAP.md).
@@ -94,3 +94,4 @@ Resumo: Vercel + PostgreSQL gerenciado + Supabase Storage + Resend. Passo a pass
 - [Deploy](docs/DEPLOY.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Variáveis de ambiente](docs/VARIAVEIS_AMBIENTE.md)
+- [Modelo de teste (integrações sem conta)](docs/MODELO_DE_TESTE.md)

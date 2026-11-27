@@ -30,6 +30,8 @@ describe("variáveis de ambiente", () => {
       RESEND_API_KEY: "re_x",
       STORAGE_DRIVER: "supabase",
       CRON_SECRET: "c".repeat(40),
+      MERCADOPAGO_CLIENT_ID: "1", MERCADOPAGO_CLIENT_SECRET: "s", MERCADOPAGO_WEBHOOK_SECRET: "w",
+      MELHORENVIO_CLIENT_ID: "1", MELHORENVIO_CLIENT_SECRET: "s",
     });
     expect(simulationAllowed(env)).toBe(false);
   });

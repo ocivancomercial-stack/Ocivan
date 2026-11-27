@@ -12,6 +12,8 @@ export type ProviderPayment = {
   raw?: unknown;
 };
 
+export type WebhookNotification = { providerPaymentId: string; eventKey: string; accountRef?: string };
+
 export type CheckoutSession =
   | { kind: "redirect"; url: string; providerPreferenceId: string }
   | { kind: "simulated"; providerPaymentId: string };
@@ -19,10 +21,16 @@ export type CheckoutSession =
 export interface PaymentProvider {
   readonly name: string;
   readonly isSimulated: boolean;
+  /** true quando o vendedor precisa conectar a própria conta no provedor para receber. */
+  readonly requiresSellerAccount?: boolean;
   createCheckout(order: { id: string; code: string; totalCents: number; platformFeeCents: number; sellerId: string; title: string }): Promise<CheckoutSession>;
-  getPayment(providerPaymentId: string): Promise<ProviderPayment | null>;
-  /** Valida a autenticidade do webhook. Retorna o id do pagamento notificado e uma chave única do evento. */
-  verifyWebhook(req: { headers: Headers; body: string }): Promise<{ providerPaymentId: string; eventKey: string } | null>;
+  /** `accountRef`: conta (vendedor) dona do pagamento no provedor, quando conhecida (ex.: user_id do webhook). */
+  getPayment(providerPaymentId: string, hint?: { accountRef?: string }): Promise<ProviderPayment | null>;
+  /**
+   * Valida a autenticidade do webhook. Retorna o id do pagamento, uma chave única do evento
+   * e (opcional) a conta dona do pagamento. `null` = inválido; `"ignore"` = evento autêntico que não nos interessa.
+   */
+  verifyWebhook(req: { headers: Headers; body: string; url: string }): Promise<WebhookNotification | "ignore" | null>;
   refund(providerPaymentId: string): Promise<{ ok: boolean }>;
 }
 
@@ -51,7 +59,7 @@ export class SimulatedPaymentProvider implements PaymentProvider {
     return createHmac("sha256", this.secret).update(body).digest("hex");
   }
 
-  async verifyWebhook({ headers, body }: { headers: Headers; body: string }) {
+  async verifyWebhook({ headers, body }: { headers: Headers; body: string; url: string }) {
     const signature = headers.get("x-simulated-signature") ?? "";
     const expected = this.sign(body);
     if (signature.length !== expected.length || !timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
@@ -74,7 +82,13 @@ export class SimulatedPaymentProvider implements PaymentProvider {
 let provider: PaymentProvider | undefined;
 export function getPaymentProvider(): PaymentProvider {
   if (provider) return provider;
-  if (process.env.PAYMENT_PROVIDER === "mercadopago") throw new Error("Mercado Pago: integração prevista para a Etapa 5");
+  if (process.env.PAYMENT_PROVIDER === "mercadopago") {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { MercadoPagoProvider } = require("./mercadopago") as typeof import("./mercadopago");
+    const mp = MercadoPagoProvider.fromEnv();
+    provider = mp;
+    return mp;
+  }
   if (process.env.APP_ENV === "production") throw new Error("Pagamento simulado é proibido em produção");
   provider = new SimulatedPaymentProvider();
   return provider;

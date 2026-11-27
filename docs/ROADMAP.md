@@ -47,8 +47,13 @@ assistente de anúncio por IA (interface desacoplada, opcional).
 Carrinho (um vendedor por pedido) · reserva temporária com expiração · checkout · pedidos · comissão · painel do vendedor ·
 admin completo (usuários, anúncios, pedidos, pagamentos, denúncias, categorias, marcas, cupons, configurações, relatórios) · avaliações.
 
-## Etapa 5 — Integrações (próxima)
-Substituir os provedores simulados por implementações reais atrás das mesmas interfaces (`MercadoPagoProvider`, `MelhorEnvioProvider`), OAuth de vendedores, split, geração de etiqueta e rastreio automático.
+## Etapa 5 — Integrações ✅ (aguardando contas para homologar)
+- `MercadoPagoProvider`: OAuth do vendedor com PKCE, preferência com `marketplace_fee`, webhook `x-signature`, consulta do pagamento, reembolso idempotente, renovação de token.
+- `MelhorEnvioProvider`: OAuth da plataforma, cotação real, etiqueta (carrinho → compra → geração → impressão), rastreio por webhook `X-ME-Signature`, cancelamento automático no reembolso.
+- **Modelo de teste**: simuladores dos dois provedores (`/api/mock/*`, `/simulador/*`) — ver MODELO_DE_TESTE.md.
+- CPF (validado) para etiquetas; página Recebimentos do vendedor; Admin › Integrações.
+- Produção recusa simuladores, sandbox e URLs não oficiais.
+- 192 testes.
 
 `PaymentProvider` (Mercado Pago Marketplace: OAuth, checkout, split, webhooks, reembolso, chargeback) ·
 `ShippingProvider` (Melhor Envio: CEP, cotação, etiqueta, rastreio, cancelamento). Simulação clara em dev.
