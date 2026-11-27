@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/*
+ * Tokens de design do Repassa Aí — altere aqui para mudar a identidade visual inteira.
+ * Uso no Tailwind: bg-brand, text-ink, bg-surface, text-muted, bg-accent, rounded-card...
+ */
+@theme {
+  --color-brand-900: #174c3c; /* verde escuro */
+  --color-brand-700: #1d6a4f;
+  --color-brand: #24845e; /* verde principal */
+  --color-brand-100: #cfe8db;
+  --color-brand-50: #e5f3eb; /* verde claro */
+  --color-canvas: #f8f9f7; /* fundo */
+  --color-surface: #ffffff;
+  --color-ink: #202522; /* texto principal */
+  --color-muted: #747c76; /* texto secundário */
+  --color-line: #e3e7e4; /* bordas */
+  --color-accent: #e7b75b; /* destaque */
+  --color-accent-50: #fbf3e2;
+  --color-danger: #c2410c;
+  --color-danger-50: #fff1ea;
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1.25rem;
+  --radius-field: 0.875rem;
+
+  --shadow-card: 0 1px 2px rgb(23 76 60 / 0.06), 0 4px 16px rgb(23 76 60 / 0.06);
+  --shadow-float: 0 8px 32px rgb(23 76 60 / 0.18);
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-canvas text-ink antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand;
+  }
+}
+
+/* Espaço para a navegação inferior no celular, respeitando a área segura do iPhone. */
+.pb-safe-nav {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .pb-safe-nav {
+    padding-bottom: 0;
+  }
+}

@@ -1,0 +1,16 @@
+import { defineConfig } from "vitest/config";
+import tsconfigPaths from "vite-tsconfig-paths";
+
+export default defineConfig({
+  plugins: [tsconfigPaths()],
+  test: {
+    environment: "node",
+    include: ["tests/**/*.test.ts"],
+    setupFiles: ["tests/setup/env.ts"],
+    globalSetup: ["tests/setup/global.ts"],
+    // Testes de integração compartilham o banco de teste: executa arquivos em série.
+    fileParallelism: false,
+    testTimeout: 20000,
+    hookTimeout: 60000,
+  },
+});

@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: repassa
+          POSTGRES_PASSWORD: repassa
+          POSTGRES_DB: repassa_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U repassa" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://repassa:repassa@localhost:5432/repassa_test?schema=public
+      DIRECT_DATABASE_URL: postgresql://repassa:repassa@localhost:5432/repassa_test?schema=public
+      TEST_DATABASE_URL: postgresql://repassa:repassa@localhost:5432/repassa_test?schema=public
+      BETTER_AUTH_SECRET: ci-secret-0123456789abcdef0123456789abcdef
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      ENCRYPTION_KEY: ${{ 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' }}
+      APP_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
