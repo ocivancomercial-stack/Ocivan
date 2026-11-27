@@ -27,8 +27,8 @@ const config = {
     clientSecret: process.env.TOKIO_CLIENT_SECRET || '',
     susep: process.env.CORRETOR_SUSEP || '',
   },
+  // Cobrança no cartão: "mock" (simulação) ou "tokio" (plataforma da Tokio Marine; exige INSURER=tokio)
   payments: process.env.PAYMENTS || 'mock',
-  gatewayApiKey: process.env.GATEWAY_API_KEY || '',
 
   iof: 0.0038,           // IOF sobre seguro de pessoas
   descontoAnual: 0.05,   // desconto no pagamento anual

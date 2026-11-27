@@ -6,7 +6,7 @@ const path = require('node:path');
 const config = require('./config');
 const db = require('./db').open(config.dbPath);
 const insurer = require('./insurer')(config);
-const payments = require('./payments')(config);
+const payments = require('./payments')(config, { insurer });
 const app = require('./app')({ config, db, insurer, payments });
 
 const LIMITE_CORPO = 100 * 1024;

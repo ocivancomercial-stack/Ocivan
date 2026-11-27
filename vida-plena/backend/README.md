@@ -2,7 +2,7 @@
 
 Servidor do app de venda de seguro de vida. Ele recebe os pedidos do app, fala com a seguradora, cobra no cartão e calcula a comissão do corretor.
 
-A integração com a Tokio Marine e o gateway de pagamento estão em **modo simulação** até chegarem as credenciais reais.
+A integração com a Tokio Marine e a cobrança no cartão estão em **modo simulação** até chegarem as credenciais reais. A cobrança será feita pela plataforma da própria Tokio (`PAYMENTS=tokio`).
 
 ## Como rodar
 
@@ -47,21 +47,21 @@ Exemplo: com prêmio mensal líquido de R$ 34,07, a comissão é de R$ 10,22 por
 - **Cliente que não quer renovar:** desligue a renovação pela rota `POST /api/admin/propostas/:numero/renovacao` com `{ "ativa": false }`.
 - **Se a seguradora recusar a renovação:** a renovação automática daquela apólice é desligada e o motivo fica registrado.
 - **Cobranças durante a vigência:**
-  - No plano mensal, o gateway cobra todo mês.
-  - No plano anual, o gateway cobra uma vez por ano.
+  - No plano mensal, a Tokio cobra todo mês.
+  - No plano anual, a Tokio cobra uma vez por ano.
   - Cada cobrança aprovada chega pelo webhook de pagamentos e gera uma comissão de 30%, inclusive depois das renovações.
 
 ## Rotas
 
 | Método | Rota | Quem usa | O que faz |
 |---|---|---|---|
-| GET | `/api/saude` | — | Mostra o status, a seguradora e o gateway ativos (sem a comissão) |
+| GET | `/api/saude` | — | Mostra o status, a seguradora e o meio de cobrança ativos (sem a comissão) |
 | POST | `/api/cotacoes` | App | Calcula o preço das coberturas escolhidas |
 | POST | `/api/propostas` | App | Envia a proposta, com dados, declaração de saúde e aceites |
 | GET | `/api/propostas/:numero` | App | Consulta o status da proposta ou da apólice |
-| POST | `/api/pagamentos` | App | Cobra no cartão a partir de um **token** do gateway |
+| POST | `/api/pagamentos` | App | Cobra no cartão a partir de um **token** do cartão |
 | POST | `/api/webhooks/seguradora` | Tokio | Recebe aceite, recusa (com estorno automático) ou emissão da apólice |
-| POST | `/api/webhooks/pagamentos` | Gateway | Registra cada cobrança recorrente (mensal ou anual) e gera a comissão dela |
+| POST | `/api/webhooks/pagamentos` | Tokio | Registra cada cobrança recorrente (mensal ou anual) e gera a comissão dela |
 | GET | `/api/admin/comissoes?status=&de=&ate=` | Você | Lista as comissões |
 | GET | `/api/admin/comissoes/resumo` | Você | Totais por status e por mês |
 | POST | `/api/admin/comissoes/:id/recebida` | Você | Marca uma comissão como recebida |
@@ -82,7 +82,7 @@ src/
   db.js                        banco SQLite: clientes, cotações, propostas, pagamentos, comissões
   insurer/tokioMarine.mock.js  seguradora simulada
   insurer/tokioMarine.http.js  esqueleto da API real da Tokio (ajustar à documentação dela)
-  payments/index.js            pagamento simulado e esqueleto do gateway
+  payments/index.js            cobrança simulada (mock) e cobrança pela Tokio (tokio)
   services/comissao.js         regras do programa de comissão
   services/validacao.js        validação de CPF, idade, capitais e aceites
 test/fluxo.test.js             testes do fluxo inteiro
@@ -91,7 +91,7 @@ test/fluxo.test.js             testes do fluxo inteiro
 ## Cartão de crédito
 
 - O app **nunca** envia o número do cartão para este servidor.
-- O cartão é tokenizado direto no gateway (Pagar.me, Stripe, Mercado Pago…), e o servidor recebe só o token.
+- O cartão é tokenizado no navegador pela plataforma de pagamento da Tokio, e o servidor recebe só o token.
 - Se alguém mandar um número de cartão no lugar do token, a requisição é recusada.
 - Tokens de teste da simulação:
   - `tok_aprova_4111`: aprova o pagamento
@@ -103,7 +103,7 @@ test/fluxo.test.js             testes do fluxo inteiro
    - Confirmar o limite de corretagem do Vida Individual e se 30% é aceito.
    - Confirmar se o repasse da comissão é feito por mensalidade.
    - Confirmar como a renovação é feita na API deles (rota, se o prêmio é recalculado pela idade e por qual índice ele é reajustado).
-2. **Gateway de pagamento:** implementar `payments/index.js`, usando assinatura no plano mensal e cobrança parcelada no anual, e usar `PAYMENTS=gateway`.
+2. **Cobrança pela Tokio:** ajustar `cobrar` e `estornar` em `tokioMarine.http.js` à documentação dela e usar `PAYMENTS=tokio` (junto com `INSURER=tokio`).
 3. **Banco e infraestrutura:**
    - Trocar o SQLite por PostgreSQL.
    - Usar HTTPS.

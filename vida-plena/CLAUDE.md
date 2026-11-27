@@ -33,7 +33,7 @@ App de venda de **seguro de vida individual 100% digital**: cotação, escolha d
 - **Tabela de preços:** a do mock é fictícia.
 
 ## Segurança (obrigatório)
-- O número do cartão **nunca** chega ao servidor: o cartão é tokenizado no gateway e o servidor recusa números de cartão.
+- O número do cartão **nunca** chega ao servidor: o cartão é tokenizado no navegador pela plataforma de pagamento da Tokio e o servidor recusa números de cartão.
 - As credenciais da Tokio ficam só no servidor (`.env`), nunca no front-end.
 - A declaração de saúde é dado sensível pela LGPD. Em produção, deve ser criptografada no banco.
 - Webhooks exigem `x-webhook-secret`. Rotas `/api/admin/*` exigem `x-admin-token`.
@@ -48,9 +48,9 @@ backend/              servidor Node.js 22.5+ sem dependências (http nativo + no
   src/server.js       servidor HTTP: API em /api/* e arquivos do frontend/ na mesma origem
   src/app.js          rotas e regras do fluxo
   src/insurer/        tokioMarine.mock.js (simulação) e tokioMarine.http.js (esqueleto da API real; rotas são suposições)
-  src/payments/       pagamento simulado e esqueleto do gateway
+  src/payments/       cobrança simulada (PAYMENTS=mock) e cobrança pela Tokio (PAYMENTS=tokio, usa tokioMarine.http.js)
   src/services/       comissao.js, validacao.js
-  test/fluxo.test.js  10 testes do fluxo completo
+  test/fluxo.test.js  11 testes do fluxo completo
 docs/telas/           capturas das telas para apresentação
 ```
 
@@ -66,10 +66,9 @@ Para apontar o app para outro servidor: `index.html?api=https://api.exemplo.com.
 
 ## Próximas tarefas sugeridas
 1. ~~Ligar o front-end ao backend.~~ Feito: o painel de integração mostra as chamadas reais ao servidor.
-2. **Gateway de pagamento real** (Pagar.me, Stripe ou Mercado Pago):
-   - tokenização do cartão no front-end (trocar `tokenizarCartao()` do `index.html` pelo SDK do gateway);
-   - assinatura no plano mensal;
-   - cobrança parcelada no plano anual.
+2. **Cobrança pela plataforma da Tokio Marine** (decisão do corretor: não haverá gateway próprio).
+   - Já pronto: `PAYMENTS=tokio` (exige `INSURER=tokio`) chama `cobrar`/`estornar` de `tokioMarine.http.js`. Rotas e campos são suposições.
+   - Falta, com a documentação da Tokio: ajustar rotas e campos; trocar `tokenizarCartao()` do `index.html` pelo SDK/checkout da Tokio; ajustar o formato do webhook `/api/webhooks/pagamentos` ao aviso de cobrança da Tokio.
 3. **Banco de produção:**
    - migrar de SQLite para PostgreSQL;
    - criptografar `declaracao_saude_json`.
@@ -79,7 +78,10 @@ Para apontar o app para outro servidor: `index.html?api=https://api.exemplo.com.
 
 ## Pendências com a Tokio Marine
 - Acesso à API e ambiente de homologação.
-- Forma de cobrança: pela Tokio ou por gateway da corretora.
+- Cobrança (decidido: pela plataforma da Tokio). Perguntar:
+  - como o cartão é tokenizado no app (SDK, iframe ou link de pagamento);
+  - se a Tokio cuida da recorrência mensal e do parcelamento anual (até 12x);
+  - como avisa cada cobrança aprovada ou recusada (webhook) e se estorna sozinha ao recusar a proposta.
 - Limite de corretagem do produto e forma de repasse.
 - Regra de renovação: recálculo por idade e índice de reajuste.
 - Condições gerais, tabela de preços e regras de subscrição.

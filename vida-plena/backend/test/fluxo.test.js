@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 
 const config = { ...require('../src/config'), comissaoPercentual: 30, adminToken: 'adm', webhookSecret: 'wh', insurer: 'mock', payments: 'mock' };
 const db = require('../src/db').open(':memory:');
-const app = require('../src/app')({ config, db, insurer: require('../src/insurer')(config), payments: require('../src/payments')(config) });
+const app = require('../src/app')({ config, db, insurer: require('../src/insurer')(config), payments: require('../src/payments')(config, {}) });
 
 const call = (method, path, body, headers = {}, query = {}) => app.handle({ method, path, body, headers, query, ip: '127.0.0.1' });
 const ADM = { 'x-admin-token': 'adm' }, WH = { 'x-webhook-secret': 'wh' };
@@ -38,7 +38,7 @@ test('mensal: cotação, proposta, pagamento e comissão de 30% sobre o prêmio 
   assert.equal(c.valor, Math.round(cot.premioLiquido * 0.3 * 100) / 100);
   assert.equal(c.status, 'A_RECEBER');
 
-  // segunda mensalidade via webhook do gateway gera outra comissão
+  // segunda mensalidade via webhook de pagamentos gera outra comissão
   const [s4] = await call('POST', '/api/webhooks/pagamentos', { numeroProposta: prop.numeroProposta, status: 'APROVADO', autorizacao: 'REC002' }, WH);
   assert.equal(s4, 200);
   const [, lista2] = await call('GET', '/api/admin/comissoes', null, ADM);
@@ -101,6 +101,20 @@ test('rota pública /api/saude não expõe a comissão', async () => {
   const [s, r] = await call('GET', '/api/saude');
   assert.equal(s, 200); assert.equal(r.ok, true);
   assert.ok(!/comiss/i.test(JSON.stringify(r)), 'nenhum campo de comissão na rota pública');
+});
+
+test('PAYMENTS=tokio cobra pela Tokio e exige INSURER=tokio', async () => {
+  const criar = require('../src/payments');
+  assert.throws(() => criar({ payments: 'tokio' }, { insurer: require('../src/insurer')(config) }), /INSURER=tokio/);
+  assert.throws(() => criar({ payments: 'gateway' }, {}), /PAYMENTS inválido/);
+  const chamadas = [];
+  const tokioFalso = { cobrar: async d => { chamadas.push(['cobrar', d]); return { status: 'APROVADO', autorizacao: 'TK1' }; },
+    estornar: async d => { chamadas.push(['estornar', d]); return { status: 'ESTORNADO' }; } };
+  const pag = criar({ payments: 'tokio' }, { insurer: tokioFalso });
+  assert.equal(pag.nome, 'tokio');
+  assert.equal((await pag.cobrar({ token: 'tok_x', valor: 10, parcelas: 1, recorrente: true, referencia: 'PRP-1' })).autorizacao, 'TK1');
+  await pag.estornar({ autorizacao: 'TK1', valor: 10 });
+  assert.deepEqual(chamadas.map(c => c[0]), ['cobrar', 'estornar']);
 });
 
 test('resumo do programa de comissão', async () => {

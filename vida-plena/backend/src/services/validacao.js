@@ -73,7 +73,7 @@ function pagamento(b) {
   if (!b || typeof b !== 'object') falha('Corpo da requisição inválido');
   if (typeof b.numeroProposta !== 'string') falha('numeroProposta obrigatório');
   if (typeof b.tokenCartao !== 'string' || !b.tokenCartao) falha('tokenCartao obrigatório (nunca envie o número do cartão)');
-  if (/^\d{12,19}$/.test(b.tokenCartao.replace(/\s/g, ''))) falha('Envie o token do gateway, não o número do cartão');
+  if (/^\d{12,19}$/.test(b.tokenCartao.replace(/\s/g, ''))) falha('Envie o token do cartão, não o número do cartão');
   const parcelas = b.parcelas === undefined ? 1 : b.parcelas;
   if (![1, 2, 3, 4, 6, 10, 12].includes(parcelas)) falha('parcelas inválidas');
   return { numeroProposta: b.numeroProposta, tokenCartao: b.tokenCartao, parcelas };

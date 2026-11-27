@@ -106,7 +106,7 @@ pre{margin:0;padding:10px 12px;font-size:12.5px;line-height:1.45;overflow-x:auto
       <p id="modo">Verificando a conexão com o servidor da corretora…</p>
       <div class="log" id="log"><div class="empty">Nenhuma chamada ainda. Comece a cotação no app.</div></div>
     </details>
-    <p class="foot">Protótipo para demonstração. Preços, regras de aceitação e números de proposta são fictícios. O número do cartão nunca vai para o servidor da corretora: só o token do gateway.</p>
+    <p class="foot">Protótipo para demonstração. Preços, regras de aceitação e números de proposta são fictícios. O número do cartão nunca vai para o servidor da corretora: só um token da plataforma de pagamento da seguradora.</p>
   </div>
 </div>
 <script>
@@ -185,8 +185,9 @@ async function conectar(){
   else $('modo').textContent='Modo simulação: servidor da corretora não encontrado, tudo roda no navegador. Para usar o servidor, rode "npm start" em backend/ e abra http://localhost:3000. Aqui aparecem a requisição e a resposta de cada passo.';
 }
 
-// Gateway de pagamento (SIMULADO): no produto final, o SDK do gateway (Pagar.me, Stripe, Mercado Pago)
-// tokeniza o cartão direto no navegador; o servidor da corretora recebe só o token.
+// Tokenização do cartão (SIMULADA): a cobrança será feita pela plataforma da Tokio Marine.
+// Com a documentação dela, trocar esta função pelo SDK/checkout da Tokio, que tokeniza o cartão
+// direto no navegador; o servidor da corretora recebe só o token.
 async function tokenizarCartao(n){await new Promise(r=>setTimeout(r,300));
   return n.endsWith('0002')?'tok_recusa_0002':'tok_aprova_'+n.slice(-4);}
 
@@ -291,7 +292,7 @@ return `<button class="back" id="prev">← Voltar</button><h1>Pagamento no cart�
 <div class="row"><div><label for="cval">Validade</label><input id="cval" inputmode="numeric" placeholder="MM/AA" value="${esc(k.val)}"></div><div><label for="ccvv">CVV</label><input id="ccvv" inputmode="numeric" maxlength="4" value="${esc(k.cvv)}"></div></div>
 <div class="err">${esc(S.err)}</div>
 <button class="cta" id="next" ${S.busy?'disabled':''}>${S.busy?'Processando…':'Pagar e contratar'}</button>
-<div class="note">Demonstração: cartão 4111 1111 1111 1111 aprova, 4000 0000 0000 0002 recusa; qualquer validade futura e CVV. Em produção o número vai direto ao gateway e o servidor recebe só um token.</div>`;},
+<div class="note">Demonstração: cartão 4111 1111 1111 1111 aprova, 4000 0000 0000 0002 recusa; qualquer validade futura e CVV. Em produção o número vai direto à plataforma de pagamento da Tokio Marine e o servidor da corretora recebe só um token.</div>`;},
 ()=>{const ok=S.prop.status==='ACEITA';return `<div class="done"><img class="ill photo" src="familia.jpg" alt="Família feliz sorrindo ao ar livre">
 <h1 style="margin-top:16px">${ok?'Sua família está protegida!':'Pagamento aprovado'}</h1>
 <p class="sub">${ok?'A apólice será enviada para '+esc(S.dados.email)+' em até 15 dias.':'Sua proposta foi para análise da seguradora por causa da declaração de saúde. A resposta sai em até 15 dias; se for recusada, o valor é estornado.'}</p>
@@ -359,9 +360,9 @@ async function next(){S.err='';
     if(!luhn(n))S.err='Número de cartão inválido.';else if(k.nome.length<3)S.err='Informe o nome impresso no cartão.';
     else if(!(mm>=1&&mm<=12)||exp<=new Date())S.err='Validade inválida ou vencida.';else if(k.cvv.length<3)S.err='CVV inválido.';
     if(S.err)return render(false);
-    // O número do cartão fica no navegador: vai ao gateway, que devolve um token. O servidor recebe só o token.
+    // O número do cartão fica no navegador: vai à plataforma de pagamento da seguradora, que devolve um token. O servidor recebe só o token.
     S.busy=true;render(false);const tokenCartao=await tokenizarCartao(n);S.busy=false;
-    logCall('Gateway de pagamento · tokenização (simulada)',{cartao:{final:n.slice(-4),bandeira:bandeira(n)}},{token:tokenCartao});
+    logCall('Pagamento Tokio Marine · tokenização do cartão (simulada)',{cartao:{final:n.slice(-4),bandeira:bandeira(n)}},{token:tokenCartao});
     const r=await api('POST /api/pagamentos',Seguradora.pagar,{numeroProposta:S.prop.numeroProposta,tokenCartao,parcelas:S.plano==='anual'?S.parc:1});
     if(!r)return render(false);
     if(r.status!=='APROVADO'){S.err='Pagamento recusado: '+r.motivo+'. Tente outro cartão.';return render(false);}
