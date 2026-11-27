@@ -55,7 +55,7 @@ Exemplo: com prêmio mensal líquido de R$ 34,07, a comissão é de R$ 10,22 por
 
 | Método | Rota | Quem usa | O que faz |
 |---|---|---|---|
-| GET | `/api/saude` | — | Mostra o status e a configuração ativa |
+| GET | `/api/saude` | — | Mostra o status, a seguradora e o gateway ativos (sem a comissão) |
 | POST | `/api/cotacoes` | App | Calcula o preço das coberturas escolhidas |
 | POST | `/api/propostas` | App | Envia a proposta, com dados, declaração de saúde e aceites |
 | GET | `/api/propostas/:numero` | App | Consulta o status da proposta ou da apólice |

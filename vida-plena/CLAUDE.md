@@ -50,7 +50,7 @@ backend/              servidor Node.js 22.5+ sem dependências (http nativo + no
   src/insurer/        tokioMarine.mock.js (simulação) e tokioMarine.http.js (esqueleto da API real; rotas são suposições)
   src/payments/       pagamento simulado e esqueleto do gateway
   src/services/       comissao.js, validacao.js
-  test/fluxo.test.js  9 testes do fluxo completo
+  test/fluxo.test.js  10 testes do fluxo completo
 docs/telas/           capturas das telas para apresentação
 ```
 

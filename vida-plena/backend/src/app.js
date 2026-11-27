@@ -242,7 +242,8 @@ module.exports = function createApp({ config, db, insurer, payments }) {
   }
 
   const rotas = [
-    ['GET', '/api/saude', async () => [200, { ok: true, seguradora: insurer.nome, pagamentos: payments.nome, comissaoPercentual: config.comissaoPercentual,
+    // Rota pública: não expõe a comissão (o percentual fica em /api/admin/comissoes/resumo).
+    ['GET', '/api/saude', async () => [200, { ok: true, seguradora: insurer.nome, pagamentos: payments.nome,
       vigenciaAnos: config.vigenciaAnos, renovacaoAutomatica: config.renovacaoAutomatica }]],
     ['POST', '/api/cotacoes', criarCotacao],
     ['POST', '/api/propostas', criarProposta],
