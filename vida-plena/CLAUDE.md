@@ -59,6 +59,7 @@ backend/              servidor Node.js 22.5+ (http nativo; única dependência: 
 frontend/admin.html   painel do corretor em http://localhost:3000/admin (admin.js separado, por causa da CSP rígida)
                       Entra com o ADMIN_TOKEN; usa só as rotas /api/admin/*. Nomes de clientes vêm do público: sempre esc().
 docs/telas/           capturas das telas para apresentação
+demo-testadores/      versão para testadores (gerada por gerar.py a partir de frontend/index.html)
 ```
 
 ## Comandos
@@ -100,3 +101,6 @@ Para apontar o app para outro servidor: `index.html?api=https://api.exemplo.com.
 ## Materiais já feitos (fora do repositório)
 - Protótipo publicado: https://claude.ai/artifact/ELE4cHr8NKwtQRrohmzdp1
 - Apresentação para a Tokio: https://claude.ai/artifact/A5T32Z5ZZm4mSNaWHMRbRf
+- Versão para testadores: https://claude.ai/artifact/FUqaTWRndrguVhQQTji92f
+  - Gerada de `frontend/index.html` por `demo-testadores/gerar.py`: sem painel técnico, sem citar a Tokio nem a comissão, com aviso de teste e tela "Dar opinião" (o testador copia a mensagem e envia ao corretor).
+  - Depois de mudar o app: `python3 demo-testadores/gerar.py` e publicar `demo-testadores/index.html` de novo, com `frontend/familia.jpg` ao lado.

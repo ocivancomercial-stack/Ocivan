@@ -1,0 +1,387 @@
+<title>Vida Plena para Testadores</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: acolhedor e confiável; um app de seguro com cara de produto lançado
+   IDEA: a apólice que se monta enquanto a família é protegida
+   PICTURE: ilustração de família feliz sob um céu azul; o preço vivo no topo do app
+   COLOUR and TYPE: azul e branco em qualquer tema (pedido do cliente); Manrope
+   LAYOUT: app em coluna única; no desktop, app à esquerda, família e integração à direita */
+:root{color-scheme:light;--bg:#f3f8ff;--card:#fff;--ink:#0d2140;--mute:#5a6b85;--line:#d7e5f8;
+--b:#0a56c2;--bd:#073f91;--sky:#e8f2ff;--sky2:#cfe3ff;--ok:#0a56c2;--warn:#b26a00}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Manrope,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1240px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:28px;align-items:start}
+@media(max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}.side .hero{display:none}}
+.app{background:var(--card);border-radius:28px;overflow:hidden;box-shadow:0 24px 60px -24px rgba(10,86,194,.35);border:1px solid var(--line)}
+.top{background:linear-gradient(160deg,var(--b),var(--bd));color:#fff;padding:18px 22px 22px}
+.brand{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.brand svg{width:26px;height:26px;flex:none}.brand>span{display:flex;gap:8px;align-items:center}
+.brand small{font-weight:600;opacity:.8;font-size:12.5px;text-align:right}
+.price{margin-top:14px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.price b{font-size:clamp(34px,9vw,46px);line-height:1.05;letter-spacing:-.02em}
+.price span{opacity:.85;font-size:14px}
+.steps{display:flex;gap:6px;margin-top:14px}.steps i{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.25)}.steps i.on{background:#fff}
+.body{padding:22px}
+h1{font-size:24px;line-height:1.15;margin:0 0 4px;text-wrap:balance}
+.sub{color:var(--mute);margin:0 0 18px;font-size:15px}
+label{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}
+input,select{width:100%;font:inherit;font-size:16px;padding:11px 12px;min-height:46px;border:1.5px solid var(--line);border-radius:12px;background:#f8fbff;color:var(--ink)}
+input:focus,select:focus,button:focus-visible{outline:3px solid rgba(10,86,194,.3);outline-offset:1px;border-color:var(--b)}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.seg{display:flex;gap:8px}.seg button{flex:1}
+button{font:inherit;font-weight:700;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;padding:0 14px}
+button.sel{border-color:var(--b);background:var(--b);color:#fff}
+.cta{width:100%;background:var(--b);border-color:var(--b);color:#fff;font-size:17px;min-height:54px;margin-top:20px;box-shadow:0 10px 24px -12px rgba(10,86,194,.8)}
+.cta:hover{background:var(--bd)}.cta:disabled{opacity:.55;cursor:not-allowed}
+.back{background:none;border:0;color:var(--mute);font-weight:600;padding:0;min-height:44px}
+.err{color:#c4302b;font-size:14px;margin-top:6px;min-height:1em}
+.ill{display:block;width:100%;height:auto;border-radius:20px;background:var(--sky)}.photo{aspect-ratio:365/261;object-fit:cover;box-shadow:0 14px 30px -18px rgba(10,86,194,.6)}
+.home h1{font-size:30px;margin-top:18px}
+.ben{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:10px}
+.ben li{display:flex;gap:12px;align-items:flex-start;font-size:15px}
+.ben svg{width:26px;height:26px;flex:none;color:var(--b)}
+.ben b{display:block}
+.cov{border:1.5px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;transition:border-color .2s}
+.cov.on{border-color:var(--sky2);background:#fbfdff}.cov.off{opacity:.62}
+.cov-h{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.cov-h b{display:block}.cov-h small{color:var(--mute);font-size:13px;display:block;line-height:1.35}
+.cov-v{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-weight:700;gap:8px}
+.cov-v em{font-style:normal;color:var(--b);font-weight:700;font-size:14px;white-space:nowrap}
+input[type=range]{padding:0;min-height:32px;background:none;border:0;accent-color:var(--b)}
+.sw{position:relative;width:52px;height:30px;flex:none;border-radius:15px;background:#c9d6e8;border:0;min-height:0;padding:0}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .18s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sw.on{background:var(--b)}.sw.on::after{left:25px}.sw:disabled{opacity:.7}
+.q{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:15px}
+.q .seg{flex:none;width:140px}.q .seg button{min-height:40px;padding:0 8px}
+.sum{width:100%;border-collapse:collapse;font-size:15px}.sum td{padding:9px 0;border-bottom:1px solid var(--line);vertical-align:top}.sum td:last-child{text-align:right;font-weight:700;white-space:nowrap;padding-left:10px}
+.tot td{border:0;font-size:18px;padding-top:14px;color:var(--b)}
+.chk{display:flex;gap:10px;align-items:flex-start;font-weight:500;font-size:14px;margin-top:14px}.chk input{width:22px;min-height:22px;height:22px;flex:none;margin-top:1px;accent-color:var(--b)}
+.cardviz{background:linear-gradient(135deg,#0a56c2,#3d8bff);color:#fff;border-radius:18px;padding:18px;aspect-ratio:1.6/1;max-height:210px;display:flex;flex-direction:column;justify-content:space-between;font-weight:700;letter-spacing:.04em;box-shadow:0 14px 30px -16px rgba(10,86,194,.9)}
+.cardviz .n{font-size:clamp(17px,5vw,21px);white-space:nowrap}.cardviz .f{display:flex;justify-content:space-between;font-size:13px;gap:10px}
+.note{background:var(--sky);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--mute);margin-top:14px}
+.done{text-align:center}
+.pill{display:inline-block;padding:5px 12px;border-radius:99px;font-size:13px;font-weight:700;background:var(--sky);color:var(--b)}
+.pill.w{background:#fff3df;color:var(--warn)}
+.side{display:grid;gap:20px}
+.hero{background:linear-gradient(180deg,var(--b),var(--bd));color:#fff;border-radius:28px;padding:28px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:20px;align-items:center}
+.hero h2{font-size:clamp(28px,3vw,40px);line-height:1.08;margin:0 0 10px;text-wrap:balance}
+.hero p{margin:0;opacity:.9}.hero .ill{background:rgba(255,255,255,.12)}
+.dev{background:#fff;border:1px solid var(--line);border-radius:20px;padding:6px 22px}
+.dev summary{cursor:pointer;font-weight:800;font-size:18px;padding:14px 0;list-style-position:inside}
+.dev p{color:var(--mute);font-size:14.5px;margin:0 0 14px}
+.log{display:flex;flex-direction:column;gap:10px;padding-bottom:18px}
+.call{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.call header{display:flex;justify-content:space-between;gap:8px;padding:8px 12px;background:var(--sky);font-weight:700;font-size:14px;flex-wrap:wrap;color:var(--bd)}
+.call header span{color:var(--mute);font-weight:600}
+pre{margin:0;padding:10px 12px;font-size:12.5px;line-height:1.45;overflow-x:auto;max-height:260px}
+.empty{color:var(--mute);font-size:14px;border:1.5px dashed var(--line);border-radius:12px;padding:18px;text-align:center}
+.foot{color:var(--mute);font-size:12.5px;margin-top:12px}
+.view-in{animation:in .35s ease}@keyframes in{from{opacity:0;transform:translateY(8px)}}
+/* versão para testadores */
+.faixa{background:var(--bd);color:#fff;font-size:14px;font-weight:600}
+.faixa div{max-width:1240px;margin:0 auto;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.faixa button{min-height:36px;background:#fff;color:var(--bd);border:0;border-radius:99px;padding:0 16px;font-size:14px}
+.guia{background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px 22px}
+.guia h2{font-size:19px;margin:0 0 10px}.guia ol{margin:0;padding-left:20px;display:grid;gap:8px;font-size:15px}
+.guia code{font:600 14px/1.4 ui-monospace,Menlo,Consolas,monospace;background:var(--sky);color:var(--bd);padding:1px 6px;border-radius:6px;white-space:nowrap}
+.guia .cta{margin-top:18px}
+.notas{display:flex;gap:8px;flex-wrap:wrap}.notas button{flex:1;min-width:48px;font-size:18px}
+textarea{width:100%;font:inherit;font-size:16px;padding:11px 12px;min-height:92px;border:1.5px solid var(--line);border-radius:12px;background:#f8fbff;color:var(--ink);resize:vertical}
+textarea:focus{outline:3px solid rgba(10,86,194,.3);outline-offset:1px;border-color:var(--b)}
+textarea[readonly]{background:var(--sky);min-height:220px;font-size:14px}
+.sec2{width:100%;margin-top:10px}
+.ok{color:var(--b);font-weight:700;font-size:14px;min-height:1.4em;margin-top:8px}
+@media(prefers-reduced-motion:reduce){.view-in{animation:none}.sw::after{transition:none}}
+</style>
+<div class="faixa" role="note"><div><span>Versão de teste: os preços são fictícios e nenhum seguro é contratado.</span><button type="button" class="abrir-opiniao">Dar opinião</button></div></div>
+<div class="wrap">
+  <main class="app" aria-live="polite">
+    <div class="top">
+      <div class="brand"><span><svg viewBox="0 0 24 24" fill="none"><path d="M12 2l8 3v6c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5l8-3z" fill="#fff"/><path d="M12 16.5s-4-2.5-4-5.2A2.2 2.2 0 0112 10a2.2 2.2 0 014 1.3c0 2.7-4 5.2-4 5.2z" fill="#0a56c2"/></svg>Vida Plena</span><small>Corretora Ocivan<br>Corretor SUSEP</small></div>
+      <div class="price"><b id="pr">R$ 25</b><span id="prl">a partir de, por mês</span></div>
+      <div class="steps" id="steps"></div>
+    </div>
+    <div class="body" id="view"></div>
+  </main>
+  <div class="side">
+    <section class="hero">
+      <div><h2>Proteção para quem você ama, contratada em minutos</h2><p>Cotação, escolha das coberturas e pagamento no cartão, tudo no celular e sem papel.</p></div>
+      <img class="ill photo" src="familia.jpg" alt="Família feliz sorrindo ao ar livre">
+    </section>
+    <section class="guia" aria-labelledby="guia-t">
+      <h2 id="guia-t">Como testar</h2>
+      <ol>
+        <li>Faça uma cotação. Os dados de exemplo já vêm preenchidos, mas pode trocar à vontade.</li>
+        <li>Ligue e desligue coberturas e mexa nos valores para ver o preço mudar.</li>
+        <li>No pagamento, use o cartão de teste <code>4111 1111 1111 1111</code>, com qualquer validade futura e qualquer CVV. Para ver um pagamento recusado, use <code>4000 0000 0000 0002</code>.</li>
+        <li>No fim, toque em "Dar opinião" e mande a mensagem pronta para quem te enviou o link.</li>
+      </ol>
+      <p class="foot">Não use um cartão de verdade. Nesta versão nada é cobrado e o que você digita não sai do seu aparelho.</p>
+      <button type="button" class="cta abrir-opiniao">Dar opinião</button>
+    </section>
+  </div>
+</div>
+<script>
+{
+/* ===== Ilustração de família (SVG original) ===== */
+function pessoa(o){const{x,g,h,pele,cabelo,roupa,calca,longo,vestido,maos}=o;
+  const r=h*.115,cy=g-h+r,ty=cy+r+2,tb=g-h*.44,w=h*.3,sh=ty+h*.06;
+  const pernas=vestido?`<rect x="${x-w*.28}" y="${tb+h*.12}" width="${w*.2}" height="${g-tb-h*.12}" rx="${w*.1}" fill="${pele}"/><rect x="${x+w*.08}" y="${tb+h*.12}" width="${w*.2}" height="${g-tb-h*.12}" rx="${w*.1}" fill="${pele}"/>`
+    :`<rect x="${x-w*.42}" y="${tb-4}" width="${w*.38}" height="${g-tb+4}" rx="${w*.15}" fill="${calca}"/><rect x="${x+w*.04}" y="${tb-4}" width="${w*.38}" height="${g-tb+4}" rx="${w*.15}" fill="${calca}"/>`;
+  const tronco=vestido?`<path d="M${x-w*.42} ${ty+6} Q${x} ${ty-4} ${x+w*.42} ${ty+6} L${x+w*.7} ${tb+h*.14} Q${x} ${tb+h*.2} ${x-w*.7} ${tb+h*.14}Z" fill="${roupa}"/>`
+    :`<rect x="${x-w*.5}" y="${ty}" width="${w}" height="${tb-ty+6}" rx="${w*.32}" fill="${roupa}"/>`;
+  const braco=(sx,[hx,hy])=>`<path d="M${sx} ${sh}L${hx} ${hy}" stroke="${roupa}" stroke-width="${w*.27}" stroke-linecap="round"/><circle cx="${hx}" cy="${hy}" r="${w*.15}" fill="${pele}"/>`;
+  const cab=longo?`<path d="M${x-r*1.15} ${cy+r*1.9} Q${x-r*1.35} ${cy-r*1.3} ${x} ${cy-r*1.15} Q${x+r*1.35} ${cy-r*1.3} ${x+r*1.15} ${cy+r*1.9}Z" fill="${cabelo}"/>`:'';
+  const topo=`<path d="M${x-r*1.02} ${cy-r*.05} Q${x-r} ${cy-r*1.25} ${x} ${cy-r*1.12} Q${x+r} ${cy-r*1.25} ${x+r*1.02} ${cy-r*.05} Q${x+r*.4} ${cy-r*.75} ${x-r*1.02} ${cy-r*.05}Z" fill="${cabelo}"/>`;
+  return `<g>${cab}${pernas}${braco(x-w*.42,maos[0])}${braco(x+w*.42,maos[1])}${tronco}<circle cx="${x}" cy="${cy}" r="${r}" fill="${pele}"/>${topo}
+  <circle cx="${x-r*.36}" cy="${cy+r*.05}" r="${r*.09}" fill="#1d2b44"/><circle cx="${x+r*.36}" cy="${cy+r*.05}" r="${r*.09}" fill="#1d2b44"/>
+  <path d="M${x-r*.38} ${cy+r*.38} Q${x} ${cy+r*.72} ${x+r*.38} ${cy+r*.38}" stroke="#1d2b44" stroke-width="${r*.12}" fill="none" stroke-linecap="round"/>
+  <circle cx="${x-r*.62}" cy="${cy+r*.38}" r="${r*.16}" fill="#f29c9c" opacity=".5"/><circle cx="${x+r*.62}" cy="${cy+r*.38}" r="${r*.16}" fill="#f29c9c" opacity=".5"/></g>`;}
+function cena(id){const g=226;
+  return `<svg class="ill" viewBox="0 0 400 260" role="img" aria-label="Ilustração de uma família feliz de mãos dadas ao ar livre">
+  <defs><linearGradient id="c${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bcd9ff"/><stop offset="1" stop-color="#eef6ff"/></linearGradient></defs>
+  <rect width="400" height="260" fill="url(#c${id})"/>
+  <circle cx="322" cy="62" r="30" fill="#fff" opacity=".9"/><circle cx="322" cy="62" r="44" fill="#fff" opacity=".25"/>
+  <g fill="#fff"><ellipse cx="90" cy="58" rx="34" ry="13"/><ellipse cx="114" cy="50" rx="22" ry="13"/><ellipse cx="236" cy="92" rx="26" ry="9" opacity=".85"/></g>
+  <path d="M0 200 Q110 170 220 196 T400 186 V260 H0Z" fill="#d6e8ff"/><path d="M0 222 Q200 196 400 222 V260 H0Z" fill="#fff"/>
+  <ellipse cx="205" cy="${g+3}" rx="120" ry="8" fill="#0a56c2" opacity=".1"/>
+  ${pessoa({x:140,g,h:152,pele:'#e8b48f',cabelo:'#3a2a20',roupa:'#0a56c2',calca:'#173a6b',maos:[[118,g-60],[178,g-66]]})}
+  ${pessoa({x:262,g,h:140,pele:'#c98e6b',cabelo:'#2b1d17',roupa:'#5aa0ff',longo:1,vestido:1,maos:[[226,g-62],[288,g-56]]})}
+  ${pessoa({x:203,g,h:90,pele:'#f0c4a2',cabelo:'#6b4a2e',roupa:'#ffffff',calca:'#0a56c2',maos:[[182,g-64],[224,g-62]]})}
+  <g transform="translate(316 ${g-26})"><ellipse cx="14" cy="14" rx="16" ry="10" fill="#f3e6d4"/><circle cx="31" cy="4" r="9" fill="#f3e6d4"/><path d="M34 -4 l6 -6 l1 9z" fill="#c9a77f"/><circle cx="34" cy="3" r="1.6" fill="#1d2b44"/><rect x="2" y="18" width="5" height="9" rx="2" fill="#f3e6d4"/><rect x="20" y="18" width="5" height="9" rx="2" fill="#f3e6d4"/><path d="M-2 10 q-8 -6 -6 -12" stroke="#f3e6d4" stroke-width="4" fill="none" stroke-linecap="round"/></g>
+  <path d="M203 92 c-6-9-20-4-15 7 c3 6 15 13 15 13 s12-7 15-13 c5-11-9-16-15-7z" fill="#0a56c2"/>
+  </svg>`;}
+
+
+/* ===== Versão para testadores =====
+   Tudo roda neste aparelho: nada é enviado a servidor algum e nenhum seguro é contratado. */
+const Seguradora={
+  wait:ms=>new Promise(r=>setTimeout(r,ms)),
+  async cotar(req){await this.wait(600);return precificar(req);},
+  async emitirProposta(req){await this.wait(800);const analise=req.declaracaoSaude.some(Boolean),ini=new Date().toISOString().slice(0,10);
+    return{numeroProposta:'PRP-'+Date.now().toString().slice(-9),status:analise?'EM_ANALISE_SUBSCRICAO':'ACEITA',periodicidade:req.periodicidade,
+      vigencia:{inicio:ini,fim:fimVig(),anos:5,renovacaoAutomatica:true}};},
+  async pagar(req){await this.wait(1000);
+    if(req.cartaoFinal==='0002')return{status:'RECUSADO',motivo:'Transação não autorizada pelo emissor'};
+    return{status:'APROVADO',autorizacao:Math.random().toString(36).slice(2,8).toUpperCase(),parcelas:req.parcelas};}
+};
+
+/* ===== Tabela fictícia de preços ===== */
+const PROF={admin:{n:'Administrativa / escritório',f:1},saude:{n:'Saúde / comércio',f:1.15},campo:{n:'Externa / motorista',f:1.4},risco:{n:'Construção / indústria pesada',f:1.8}};
+const COV=[
+ {id:'morte',n:'Morte por qualquer causa',d:'Capital pago aos beneficiários. Cobertura básica obrigatória.',min:50000,max:1000000,step:10000,def:200000,fixo:true},
+ {id:'ipa',n:'Invalidez permanente por acidente',d:'Até 100% do capital, conforme o grau da invalidez.',min:20000,max:1000000,step:10000,def:200000},
+ {id:'dg',n:'Doenças graves',d:'Antecipa capital em diagnóstico de câncer, infarto, AVC e outras.',min:20000,max:500000,step:10000,def:100000},
+ {id:'ma',n:'Morte acidental (adicional)',d:'Capital extra se a morte for causada por acidente.',min:20000,max:1000000,step:10000,def:100000},
+ {id:'dit',n:'Diária por incapacidade temporária',d:'Valor por dia afastado do trabalho por acidente ou doença.',min:50,max:500,step:10,def:150,dia:true},
+ {id:'fun',n:'Assistência funeral',d:'Organização e custeio do funeral até R$ 7.000.',fixa:true}];
+function idade(n){const d=new Date(n+'T12:00:00'),h=new Date();let a=h.getFullYear()-d.getFullYear();if(h<new Date(h.getFullYear(),d.getMonth(),d.getDate()))a--;return a;}
+const r2=v=>Math.round(v*100)/100;
+function precificar(req){
+  const a=idade(req.nascimento),fa=Math.exp(.075*(a-30)),fs=req.sexo==='F'?.85:1,ff=req.fumante?1.6:1,fp=PROF[req.profissao].f;
+  const it=req.coberturas.map(c=>{let p=0;
+    if(c.id==='morte')p=c.capital/1000*.11*fa*fs*ff;if(c.id==='ipa')p=c.capital/1000*.035*fp;
+    if(c.id==='dg')p=c.capital/1000*.16*fa*ff;if(c.id==='ma')p=c.capital/1000*.025*fp;
+    if(c.id==='dit')p=c.capital*.34*fp*(1+Math.max(0,a-40)*.02);if(c.id==='fun')p=6.9;
+    return{cobertura:c.id,premio:r2(p)};});
+  const liq=r2(Math.max(it.reduce((s,x)=>s+x.premio,0),25)),iof=r2(liq*.0038),m=r2(liq+iof);
+  return{idCotacao:'COT-'+Math.random().toString(36).slice(2,10).toUpperCase(),idade:a,itens:it,premioLiquido:liq,iof,premioMensal:m,premioAnual:r2(m*12*.95)};
+}
+
+/* ===== Estado ===== */
+const S={step:0,dados:{nome:'Mariana Souza',cpf:'529.982.247-25',nascimento:'1988-05-14',sexo:'F',fumante:false,profissao:'admin',uf:'PR',email:'mariana@exemplo.com'},
+ cov:Object.fromEntries(COV.map(c=>[c.id,{on:c.fixo||['ipa','fun'].includes(c.id),v:c.def}])),
+ saude:[false,false,false,false],benef:'Herdeiros legais',cot:null,prop:null,pag:null,plano:'mensal',parc:1,card:{n:'',nome:'',val:'',cvv:''},busy:false,err:''};
+const brl=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=id=>document.getElementById(id);
+const QS=['Tem ou já teve câncer, doença cardíaca, AVC ou diabetes?','Está afastado do trabalho ou em tratamento médico agora?','Fez cirurgia ou foi internado nos últimos 5 anos?','Pratica esporte radical ou de risco (paraquedismo, mergulho, motociclismo)?'];
+const UFS=['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+function cpfOk(c){const d=c.replace(/\D/g,'');if(d.length!==11||/^(\d)\1+$/.test(d))return false;const dv=n=>{let s=0;for(let i=0;i<n;i++)s+=+d[i]*(n+1-i);const r=s*10%11;return r===10?0:r};return dv(9)===+d[9]&&dv(10)===+d[10];}
+
+async function api(_,fn,req){S.busy=true;render(false);
+  try{return await fn.call(Seguradora,req);}
+  catch{S.err='Algo deu errado. Tente de novo.';return null;}
+  finally{S.busy=false;}}
+function covReq(){return COV.filter(c=>S.cov[c.id].on).map(c=>({id:c.id,capital:c.fixa?7000:S.cov[c.id].v}));}
+function cotReq(){const d=S.dados;return{nascimento:d.nascimento,sexo:d.sexo,fumante:d.fumante,profissao:d.profissao,uf:d.uf,coberturas:covReq()};}
+let tmr;function requote(){clearTimeout(tmr);tmr=setTimeout(()=>{S.cot=precificar(cotReq());header();if($('covlist'))paintCov();const n=$('next');if(n&&S.step===2)n.textContent=`Continuar · ${brl(S.cot.premioMensal)}/mês`;},120);}
+function header(){const c=S.cot,an=S.plano==='anual'&&S.step>=4;
+  $('pr').textContent=c?brl(an?c.premioAnual:c.premioMensal):'R$ 25';
+  $('prl').textContent=c?(an?'por ano · 5% de desconto':'por mês · com IOF'):'a partir de, por mês';
+  $('steps').innerHTML=S.step===0?'':Array.from({length:5},(_,i)=>`<i class="${i<Math.min(S.step,5)?'on':''}"></i>`).join('');}
+
+const ICO={rel:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+ adj:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>',
+ shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4" stroke-linecap="round"/></svg>',
+ card:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>'};
+
+/* ===== Telas ===== */
+const V=[
+()=>`<div class="home"><img class="ill photo" src="familia.jpg" alt="Família feliz sorrindo ao ar livre"><h1>Proteja quem você ama</h1><p class="sub">Seguro de vida individual, contratado direto pelo celular com um corretor habilitado na SUSEP.</p>
+<ul class="ben"><li>${ICO.rel}<span><b>Cotação em 1 minuto</b>Preço na hora, sem ligação nem papelada.</span></li>
+<li>${ICO.adj}<span><b>Você monta a proteção</b>Escolha coberturas e valores do seu jeito.</span></li>
+<li>${ICO.card}<span><b>Pagamento no cartão</b>Mensal ou anual em até 12 vezes.</span></li>
+<li>${ICO.shield}<span><b>Vigência de 5 anos</b>Com renovação automática ao final do período.</span></li></ul>
+<button class="cta" id="next">Fazer minha cotação</button></div>`,
+()=>{const d=S.dados;return `<button class="back" id="prev">← Início</button><h1>Vamos cotar seu seguro</h1><p class="sub">Esses dados definem o preço.</p>
+<label for="nome">Nome completo</label><input id="nome" value="${esc(d.nome)}" autocomplete="name">
+<div class="row"><div><label for="cpf">CPF</label><input id="cpf" inputmode="numeric" value="${esc(d.cpf)}"></div>
+<div><label for="nasc">Nascimento</label><input id="nasc" type="date" value="${esc(d.nascimento)}"></div></div>
+<label>Sexo</label><div class="seg" data-k="sexo"><button class="${d.sexo==='F'?'sel':''}" data-v="F">Feminino</button><button class="${d.sexo==='M'?'sel':''}" data-v="M">Masculino</button></div>
+<label>Fumante?</label><div class="seg" data-k="fumante"><button class="${!d.fumante?'sel':''}" data-v="0">Não</button><button class="${d.fumante?'sel':''}" data-v="1">Sim</button></div>
+<div class="row"><div><label for="prof">Profissão</label><select id="prof">${Object.entries(PROF).map(([k,p])=>`<option value="${k}" ${k===d.profissao?'selected':''}>${p.n}</option>`).join('')}</select></div>
+<div><label for="uf">Estado</label><select id="uf">${UFS.map(u=>`<option ${u===d.uf?'selected':''}>${u}</option>`).join('')}</select></div></div>
+<label for="email">E-mail</label><input id="email" type="email" value="${esc(d.email)}" autocomplete="email">
+<div class="err">${esc(S.err)}</div>
+<button class="cta" id="next" ${S.busy?'disabled':''}>${S.busy?'Cotando…':'Ver meu preço'}</button>
+<p class="foot">Dados de exemplo já preenchidos. Pode usar assim mesmo.</p>`;},
+()=>`<button class="back" id="prev">← Voltar</button><h1>Monte sua proteção</h1><p class="sub">Ligue as coberturas e ajuste os valores. O preço muda na hora.</p>
+<div id="covlist"></div><button class="cta" id="next">Continuar · ${S.cot?brl(S.cot.premioMensal):''}/mês</button>`,
+()=>`<button class="back" id="prev">← Voltar</button><h1>Declaração de saúde</h1><p class="sub">Responda com sinceridade. Informação omitida pode levar à perda do direito à indenização.</p>
+${QS.map((q,i)=>`<div class="q"><span>${q}</span><div class="seg" data-q="${i}"><button class="${!S.saude[i]?'sel':''}" data-v="0">Não</button><button class="${S.saude[i]?'sel':''}" data-v="1">Sim</button></div></div>`).join('')}
+<label for="ben">Beneficiários</label><input id="ben" value="${esc(S.benef)}">
+<button class="cta" id="next">Revisar contratação</button>`,
+()=>{const c=S.cot,nm=Object.fromEntries(COV.map(x=>[x.id,x.n]));return `<button class="back" id="prev">← Voltar</button><h1>Revise e confirme</h1><p class="sub">Cotação ${esc(c.idCotacao)} · ${esc(S.dados.nome)}, ${c.idade} anos</p>
+<table class="sum">${covReq().map(x=>{const it=c.itens.find(i=>i.cobertura===x.id);return `<tr><td>${nm[x.id]}<br><small style="color:var(--mute)">${x.id==='dit'?brl(x.capital)+' por dia':x.id==='fun'?'Até '+brl(7000):brl(x.capital)}</small></td><td>${brl(it.premio)}</td></tr>`}).join('')}
+<tr><td>IOF (0,38%)</td><td>${brl(c.iof)}</td></tr><tr><td>Vigência</td><td>5 anos · renovação automática</td></tr><tr class="tot"><td>Total mensal</td><td>${brl(c.premioMensal)}</td></tr></table>
+<label>Forma de pagamento</label><div class="seg" data-k="plano"><button class="${S.plano==='mensal'?'sel':''}" data-v="mensal">Mensal</button><button class="${S.plano==='anual'?'sel':''}" data-v="anual">Anual −5%</button></div>
+${S.plano==='anual'?`<label for="parc">Parcelas no cartão</label><select id="parc">${[1,2,3,4,6,10,12].map(n=>`<option value="${n}" ${n==S.parc?'selected':''}>${n}x de ${brl(c.premioAnual/n)}</option>`).join('')}</select>`:''}
+<label class="chk"><input type="checkbox" id="ac1"> Li e aceito as Condições Gerais do seguro e o resumo das coberturas.</label>
+<label class="chk"><input type="checkbox" id="ac2"> Confirmo que as respostas da declaração de saúde são verdadeiras.</label>
+<label class="chk"><input type="checkbox" id="ac3"> Autorizo o tratamento dos meus dados, inclusive de saúde, para esta contratação (LGPD).</label>
+<div class="err">${esc(S.err)}</div>
+<button class="cta" id="next" ${S.busy?'disabled':''}>${S.busy?'Enviando proposta…':'Ir para o pagamento'}</button>`;},
+()=>{const k=S.card,v=S.plano==='anual'?S.cot.premioAnual:S.cot.premioMensal;
+return `<button class="back" id="prev">← Voltar</button><h1>Pagamento no cartão</h1><p class="sub">Proposta ${esc(S.prop.numeroProposta)} · ${S.plano==='anual'?`${S.parc}x de ${brl(v/S.parc)}`:brl(v)+' por mês, cobrado todo mês'}</p>
+<div class="cardviz"><span id="cvb">${bandeira(k.n)}</span><span class="n" id="cvn">${mask(k.n)}</span><div class="f"><span id="cvh">${esc(k.nome||'NOME IMPRESSO')}</span><span id="cvv">${esc(k.val||'MM/AA')}</span></div></div>
+<label for="cn">Número do cartão</label><input id="cn" inputmode="numeric" autocomplete="cc-number" value="${esc(k.n)}" placeholder="0000 0000 0000 0000">
+<label for="ch">Nome impresso</label><input id="ch" autocomplete="cc-name" value="${esc(k.nome)}">
+<div class="row"><div><label for="cval">Validade</label><input id="cval" inputmode="numeric" placeholder="MM/AA" value="${esc(k.val)}"></div><div><label for="ccvv">CVV</label><input id="ccvv" inputmode="numeric" maxlength="4" value="${esc(k.cvv)}"></div></div>
+<div class="err">${esc(S.err)}</div>
+<button class="cta" id="next" ${S.busy?'disabled':''}>${S.busy?'Processando…':'Pagar e contratar'}</button>
+<div class="note">Versão de teste: use o cartão <b>4111 1111 1111 1111</b> (aprova) ou <b>4000 0000 0000 0002</b> (recusa), com qualquer validade futura e qualquer CVV. Não use um cartão de verdade: nada é cobrado e o número não sai do seu aparelho.</div>`;},
+()=>{const ok=S.prop.status==='ACEITA';return `<div class="done"><img class="ill photo" src="familia.jpg" alt="Família feliz sorrindo ao ar livre">
+<h1 style="margin-top:16px">${ok?'Sua família está protegida!':'Pagamento aprovado'}</h1>
+<p class="sub">${ok?'A apólice será enviada para '+esc(S.dados.email)+' em até 15 dias.':'Sua proposta foi para análise da seguradora por causa da declaração de saúde. A resposta sai em até 15 dias; se for recusada, o valor é estornado.'}</p>
+<span class="pill ${ok?'':'w'}">${ok?'Proposta aceita':'Em análise de subscrição'}</span></div>
+<table class="sum" style="margin-top:18px"><tr><td>Proposta</td><td>${esc(S.prop.numeroProposta)}</td></tr><tr><td>Autorização do cartão</td><td>${esc(S.pag.autorizacao)}</td></tr>
+<tr><td>Segurado(a)</td><td>${esc(S.dados.nome)}</td></tr><tr><td>Vigência</td><td>até ${dataBR(S.prop.vigencia.fim)}</td></tr><tr><td>Renovação</td><td>Automática</td></tr><tr><td>Valor</td><td>${S.plano==='anual'?S.parc+'x de '+brl(S.cot.premioAnual/S.parc):brl(S.cot.premioMensal)+'/mês'}</td></tr></table>
+<p class="note">Isto é uma versão de teste: nenhum seguro foi contratado e nada foi cobrado.</p>
+<button class="cta" id="op-abrir">Dar minha opinião</button>
+<button class="sec2" id="restart">Fazer nova cotação</button>`;}
+];
+function bandeira(n){const d=n.replace(/\D/g,'');return /^4/.test(d)?'VISA':/^5[1-5]/.test(d)?'MASTERCARD':/^3[47]/.test(d)?'AMEX':/^(636368|438935|504175|451416|509|650|6516|6550)/.test(d)?'ELO':'CARTÃO';}
+function fimVig(){const d=new Date();d.setFullYear(d.getFullYear()+5);return d.toISOString().slice(0,10);}
+const dataBR=s=>s.split('-').reverse().join('/');
+function mask(n){return (n.replace(/\D/g,'')+'•'.repeat(16)).slice(0,16).replace(/(.{4})/g,'$1 ').trim();}
+function luhn(n){let s=0,a=false;for(let i=n.length-1;i>=0;i--){let x=+n[i];if(a){x*=2;if(x>9)x-=9}s+=x;a=!a}return n.length>=13&&s%10===0;}
+function paintCov(){$('covlist').innerHTML=COV.map(c=>{const st=S.cov[c.id],it=S.cot&&S.cot.itens.find(i=>i.cobertura===c.id);
+  return `<div class="cov ${st.on?'on':'off'}"><div class="cov-h"><div><b>${c.n}</b><small>${c.d}</small></div><button class="sw ${st.on?'on':''}" data-t="${c.id}" aria-label="${c.n}" aria-pressed="${st.on}" ${c.fixo?'disabled':''}></button></div>
+  ${c.fixa?`<div class="cov-v"><span>Valor fixo</span><em>${it?brl(it.premio)+'/mês':'desligada'}</em></div>`:`<div class="cov-v"><span id="v-${c.id}">${brl(st.v)}${c.dia?' por dia':''}</span><em>${it?brl(it.premio)+'/mês':'desligada'}</em></div>
+  <input type="range" min="${c.min}" max="${c.max}" step="${c.step}" value="${st.v}" data-r="${c.id}" ${st.on?'':'disabled'} aria-label="Valor de ${c.n}">`}</div>`;}).join('');}
+function render(anim=true){header();const v=$('view');v.innerHTML=OP.aberta?telaOpiniao():V[S.step]();if(S.step===2&&!OP.aberta)paintCov();
+  if(anim){v.classList.remove('view-in');void v.offsetWidth;v.classList.add('view-in');
+    const a=document.querySelector('.app');if(a.getBoundingClientRect().top<0)a.scrollIntoView({block:'start'});}}
+
+/* ===== Opinião do testador =====
+   A página não guarda respostas: monta a mensagem para o testador copiar e enviar.
+   O rascunho fica só neste aparelho (localStorage), para não se perder ao recarregar. */
+const ETAPAS=['Início','Seus dados','Coberturas','Declaração de saúde','Revisão','Pagamento','Contratação concluída'];
+const OP_CHAVE='vp_teste_opiniao';
+const OP=(()=>{let d={};try{d=JSON.parse(localStorage.getItem(OP_CHAVE)||'{}')||{}}catch{}
+  return{aberta:false,nota:+d.nota||0,facil:d.facil||'',gostou:d.gostou||'',melhorar:d.melhorar||'',nome:d.nome||'',texto:'',aviso:''};})();
+function opGuardar(){try{localStorage.setItem(OP_CHAVE,JSON.stringify({nota:OP.nota,facil:OP.facil,gostou:OP.gostou,melhorar:OP.melhorar,nome:OP.nome}))}catch{}}
+function opTexto(){
+  const celular=matchMedia('(max-width: 700px)').matches||/Mobi|Android|iPhone/i.test(navigator.userAgent);
+  return ['Opinião sobre o app Vida Plena (versão de teste)','',
+    `Nota: ${OP.nota} de 5`,`Fácil de entender: ${OP.facil||'não respondeu'}`,'',
+    `O que mais gostei: ${OP.gostou.trim()||'-'}`,'',`O que pode melhorar: ${OP.melhorar.trim()||'-'}`,'',
+    `Até onde cheguei: ${ETAPAS[S.step]}${S.pag?' (pagamento aprovado)':''}`,`Plano escolhido: ${S.plano==='anual'?'anual':'mensal'}`,
+    `Aparelho: ${celular?'celular':'computador'}`,OP.nome.trim()?`Nome: ${OP.nome.trim()}`:''].filter((l,i,a)=>!(l===''&&a[i-1]==='')).join('\n').trim();}
+function telaOpiniao(){
+  if(OP.texto)return `<button class="back" id="op-editar">← Editar opinião</button><h1>Sua opinião está pronta</h1>
+<p class="sub">Copie a mensagem e envie para quem te mandou o link, pelo WhatsApp ou por e-mail.</p>
+<label for="op-texto">Mensagem</label><textarea id="op-texto" readonly>${esc(OP.texto)}</textarea>
+<button class="cta" id="op-copiar">Copiar opinião</button><div class="ok" id="op-ok" aria-live="polite">${esc(OP.aviso)}</div>
+<button class="sec2" id="op-voltar">Voltar ao app</button>`;
+  return `<button class="back" id="op-voltar">← Voltar ao app</button><h1>Dar opinião</h1>
+<p class="sub">Leva um minuto e ajuda muito a deixar o app melhor.</p>
+<label>Que nota você dá para o app?</label><div class="notas seg" data-op="nota">${[1,2,3,4,5].map(n=>`<button class="${OP.nota===n?'sel':''}" data-v="${n}" aria-label="Nota ${n}">${n}</button>`).join('')}</div>
+<label>Foi fácil de entender?</label><div class="seg" data-op="facil">${['Sim','Mais ou menos','Não'].map(t=>`<button class="${OP.facil===t?'sel':''}" data-v="${t}">${t}</button>`).join('')}</div>
+<label for="op-gostou">O que você mais gostou?</label><textarea id="op-gostou" maxlength="1000">${esc(OP.gostou)}</textarea>
+<label for="op-melhorar">O que podemos melhorar? Algo ficou confuso ou faltou?</label><textarea id="op-melhorar" maxlength="1000">${esc(OP.melhorar)}</textarea>
+<label for="op-nome">Seu nome (opcional)</label><input id="op-nome" maxlength="80" value="${esc(OP.nome)}" autocomplete="name">
+<div class="err">${esc(OP.aviso)}</div>
+<button class="cta" id="op-gerar">Ver mensagem para enviar</button>`;}
+function abrirOpiniao(){readDados();OP.aberta=true;OP.texto='';OP.aviso='';render();}
+document.addEventListener('click',e=>{const b=e.target.closest('.abrir-opiniao');if(b)abrirOpiniao();});
+
+/* ===== Eventos ===== */
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('#view button');if(!b)return;
+  const seg=b.parentElement.classList.contains('seg')?b.parentElement:null;
+  if(OP.aberta||b.id==='op-abrir'){
+    if(b.id==='op-abrir'){abrirOpiniao();return}
+    if(seg&&seg.dataset.op){OP[seg.dataset.op]=seg.dataset.op==='nota'?+b.dataset.v:b.dataset.v;OP.aviso='';opGuardar();render(false);return}
+    if(b.id==='op-voltar'){OP.aberta=false;OP.texto='';render();return}
+    if(b.id==='op-editar'){OP.texto='';OP.aviso='';render();return}
+    if(b.id==='op-gerar'){if(!OP.nota){OP.aviso='Escolha uma nota de 1 a 5.';return render(false)}OP.texto=opTexto();OP.aviso='';return render()}
+    if(b.id==='op-copiar'){const t=$('op-texto');
+      const selecionar=()=>{t.focus();t.select();OP.aviso='Selecione o texto acima e copie.';$('op-ok').textContent=OP.aviso;};
+      try{navigator.clipboard.writeText(OP.texto).then(()=>{OP.aviso='Copiado! Agora é só colar na conversa e enviar.';$('op-ok').textContent=OP.aviso;},selecionar)}catch{selecionar()}
+      return}
+    return}
+  if(seg&&seg.dataset.k){const k=seg.dataset.k,v=b.dataset.v;if(k==='plano'){S.plano=v;render(false);return}
+    readDados();S.dados[k]=k==='fumante'?v==='1':v;render(false);return}
+  if(seg&&seg.dataset.q){S.saude[+seg.dataset.q]=b.dataset.v==='1';S.benef=$('ben').value;render(false);return}
+  if(b.dataset.t){const c=S.cov[b.dataset.t];c.on=!c.on;requote();paintCov();return}
+  if(b.id==='prev'){readDados();S.err='';S.step--;render();return}
+  if(b.id==='restart'){Object.assign(S,{step:0,cot:null,prop:null,pag:null,card:{n:'',nome:'',val:'',cvv:''}});render();return}
+  if(b.id==='next')await next();
+});
+document.addEventListener('input',e=>{const t=e.target;
+  if(t.id==='op-gostou'||t.id==='op-melhorar'||t.id==='op-nome'){OP[t.id.slice(3)]=t.value;opGuardar();return}
+  if(t.dataset.r){S.cov[t.dataset.r].v=+t.value;const c=COV.find(x=>x.id===t.dataset.r);$('v-'+c.id).textContent=brl(+t.value)+(c.dia?' por dia':'');requote();}
+  if(t.id==='parc'){S.parc=+t.value;header()}
+  if(t.id==='cpf'){let d=t.value.replace(/\D/g,'').slice(0,11);t.value=d.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');}
+  if(t.id==='cn'){t.value=t.value.replace(/\D/g,'').slice(0,16).replace(/(.{4})(?=.)/g,'$1 ');S.card.n=t.value;$('cvn').textContent=mask(t.value);$('cvb').textContent=bandeira(t.value)}
+  if(t.id==='ch'){t.value=t.value.toUpperCase();S.card.nome=t.value;$('cvh').textContent=t.value||'NOME IMPRESSO'}
+  if(t.id==='cval'){let d=t.value.replace(/\D/g,'').slice(0,4);t.value=d.length>2?d.slice(0,2)+'/'+d.slice(2):d;S.card.val=t.value;$('cvv').textContent=t.value||'MM/AA'}
+  if(t.id==='ccvv'){t.value=t.value.replace(/\D/g,'');S.card.cvv=t.value}
+});
+function readDados(){if(S.step!==1)return;const d=S.dados;d.nome=$('nome').value.trim();d.cpf=$('cpf').value;d.nascimento=$('nasc').value;d.uf=$('uf').value;d.profissao=$('prof').value;d.email=$('email').value.trim();}
+async function next(){S.err='';
+  if(S.step===0){S.step=1;return render();}
+  if(S.step===1){readDados();const d=S.dados,a=d.nascimento?idade(d.nascimento):NaN;
+    if(d.nome.split(/\s+/).length<2)S.err='Informe nome e sobrenome.';
+    else if(!cpfOk(d.cpf))S.err='CPF inválido.';
+    else if(!(a>=18&&a<=65))S.err='Este produto aceita idades de 18 a 65 anos.';
+    else if(!/^\S+@\S+\.\S+$/.test(d.email))S.err='E-mail inválido.';
+    if(S.err)return render(false);
+    const cot=await api('etapa',Seguradora.cotar,cotReq());if(!cot)return render(false);
+    S.cot=cot;S.step=2;return render();}
+  if(S.step===2){const cot=await api('etapa',Seguradora.cotar,cotReq());if(!cot)return render(false);
+    S.cot=cot;S.step=3;return render();}
+  if(S.step===3){S.benef=$('ben').value.trim()||'Herdeiros legais';S.step=4;return render();}
+  if(S.step===4){if(!['ac1','ac2','ac3'].every(i=>$(i).checked)){S.err='Marque os três aceites para continuar.';return render(false);}
+    const prop=await api('etapa',Seguradora.emitirProposta,{idCotacao:S.cot.idCotacao,
+      proponente:{nome:S.dados.nome,cpf:S.dados.cpf,email:S.dados.email},beneficiarios:S.benef,
+      declaracaoSaude:S.saude,periodicidade:S.plano,aceites:{condicoesGerais:true,declaracaoSaude:true,lgpd:true}});
+    if(!prop)return render(false);
+    S.prop=prop;S.step=5;return render();}
+  if(S.step===5){const k=S.card,n=k.n.replace(/\D/g,''),[mm,aa]=k.val.split('/').map(Number),exp=new Date(2000+(aa||0),mm||0,1);
+    if(!luhn(n))S.err='Número de cartão inválido.';else if(k.nome.length<3)S.err='Informe o nome impresso no cartão.';
+    else if(!(mm>=1&&mm<=12)||exp<=new Date())S.err='Validade inválida ou vencida.';else if(k.cvv.length<3)S.err='CVV inválido.';
+    if(S.err)return render(false);
+    const r=await api('pagar',Seguradora.pagar,{cartaoFinal:n.slice(-4),parcelas:S.plano==='anual'?S.parc:1});
+    if(!r)return render(false);
+    if(r.status!=='APROVADO'){S.err='Pagamento recusado: '+r.motivo+'. Tente outro cartão.';return render(false);}
+    S.pag=r;S.card={n:'',nome:'',val:'',cvv:''};S.step=6;return render();}
+}
+render(false);
+}
+</script>
