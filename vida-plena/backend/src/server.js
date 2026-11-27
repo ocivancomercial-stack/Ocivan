@@ -18,9 +18,18 @@ const TIPOS = { '.html': 'text/html; charset=utf-8', '.jpg': 'image/jpeg', '.jpe
   '.svg': 'image/svg+xml', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.ico': 'image/x-icon',
   '.webmanifest': 'application/manifest+json' };
 
+// Endereços amigáveis
+const ATALHOS = { '/admin': '/admin.html', '/admin/': '/admin.html' };
+
+// Política de segurança do painel do corretor: ele guarda o token de admin, então só roda
+// o script do próprio servidor (admin.js) e só fala com a própria API.
+const CSP_ADMIN = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+  "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
+
 function servirApp(pathname, res) {
   let rel;
   try { rel = decodeURIComponent(pathname); } catch { rel = ''; }
+  rel = ATALHOS[rel] || rel;
   if (rel.endsWith('/')) rel += 'index.html';
   const arq = path.resolve(PASTA_APP, '.' + rel);
   const tipo = TIPOS[path.extname(arq).toLowerCase()];
@@ -28,8 +37,10 @@ function servirApp(pathname, res) {
   if (!arq.startsWith(PASTA_APP + path.sep) || !tipo) return false;
   let corpo;
   try { corpo = fs.readFileSync(arq); } catch { return false; }
+  const painel = path.basename(arq).startsWith('admin.');
   res.writeHead(200, { 'content-type': tipo, 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer',
-    'cache-control': tipo.startsWith('text/html') ? 'no-cache' : 'public, max-age=3600' });
+    'cache-control': tipo.startsWith('text/html') || painel ? 'no-cache' : 'public, max-age=3600',
+    ...(painel && tipo.startsWith('text/html') ? { 'content-security-policy': CSP_ADMIN, 'x-frame-options': 'DENY' } : {}) });
   res.end(corpo);
   return true;
 }

@@ -55,7 +55,9 @@ backend/              servidor Node.js 22.5+ (http nativo; única dependência: 
   src/insurer/        tokioMarine.mock.js (simulação) e tokioMarine.http.js (esqueleto da API real; rotas são suposições)
   src/payments/       cobrança simulada (PAYMENTS=mock) e cobrança pela Tokio (PAYMENTS=tokio, usa tokioMarine.http.js)
   src/services/       comissao.js, validacao.js
-  test/fluxo.test.js  19 testes do fluxo completo (SQLite e PostgreSQL)
+  test/fluxo.test.js  20 testes do fluxo completo (SQLite e PostgreSQL)
+frontend/admin.html   painel do corretor em http://localhost:3000/admin (admin.js separado, por causa da CSP rígida)
+                      Entra com o ADMIN_TOKEN; usa só as rotas /api/admin/*. Nomes de clientes vêm do público: sempre esc().
 docs/telas/           capturas das telas para apresentação
 ```
 
@@ -68,7 +70,7 @@ npm test        # node --test (SQLite em memória)
 TEST_DATABASE_URL=postgres://... npm test   # mesmos testes no PostgreSQL (schema temporário)
 npm start       # app e API em http://localhost:3000
 ```
-Para ver o app ligado ao servidor, abra http://localhost:3000. Abrindo `frontend/index.html` direto, ele roda em modo simulação.
+Para ver o app ligado ao servidor, abra http://localhost:3000. O painel do corretor fica em http://localhost:3000/admin (entra com o `ADMIN_TOKEN`). Abrindo `frontend/index.html` direto, ele roda em modo simulação.
 Para apontar o app para outro servidor: `index.html?api=https://api.exemplo.com.br` (o servidor precisa liberar a origem em `CORS_ORIGIN`).
 
 ## Próximas tarefas sugeridas
@@ -77,7 +79,7 @@ Para apontar o app para outro servidor: `index.html?api=https://api.exemplo.com.
    - Já pronto: `PAYMENTS=tokio` (exige `INSURER=tokio`) chama `cobrar`/`estornar` de `tokioMarine.http.js`. Rotas e campos são suposições.
    - Falta, com a documentação da Tokio: ajustar rotas e campos; trocar `tokenizarCartao()` do `index.html` pelo SDK/checkout da Tokio; ajustar o formato do webhook `/api/webhooks/pagamentos` ao aviso de cobrança da Tokio.
 3. ~~Banco de produção.~~ Feito: PostgreSQL com `DATABASE_URL` e declaração de saúde cifrada. Falta só criar o banco gerenciado na publicação (tarefa 6).
-4. **Painel administrativo** para o corretor: comissões, vencimentos e renovações.
+4. ~~Painel do corretor.~~ Feito: `/admin` com resumo, comissões (marcar recebida, exportar CSV), propostas e renovações.
 5. **Integração real com a Tokio**, quando houver documentação: ajustar `tokioMarine.http.js` e usar `INSURER=tokio`.
 6. **Publicação:** transformar o front-end em PWA ou app (React Native/Expo), com domínio próprio e HTTPS.
 7. ~~Agendador da renovação automática.~~ Feito: `src/agendador.js`, todo dia às 3h de Brasília.

@@ -15,6 +15,20 @@ npm start                # app e API em http://localhost:3000
 npm test                 # roda os testes do fluxo completo (SQLite em memória)
 ```
 
+## Painel do corretor
+
+Abra http://localhost:3000/admin e entre com o `ADMIN_TOKEN` do `.env`.
+
+- **Resumo:** comissões a receber, recebidas, previstas e canceladas, gráfico por mês, vencimentos e a última renovação automática.
+- **Comissões:** filtros por status e data, botão "Marcar recebida" e exportação para planilha (CSV no formato do Excel em português).
+- **Propostas:** busca por nome, número ou parte do CPF. O CPF aparece mascarado e a declaração de saúde nunca é mostrada.
+- **Renovações:** apólices vencendo, liga e desliga da renovação automática, botão para processar na hora e histórico do agendador.
+- **Segurança:**
+  - O token fica só na aba do navegador e some ao fechá-la.
+  - A página tem política de segurança rígida (CSP): só roda o próprio script e só fala com a própria API.
+  - Todo texto vindo de clientes é exibido como texto, sem executar.
+  - No CSV, nomes que começam com `=`, `+`, `-` ou `@` são neutralizados para a planilha não executar fórmulas.
+
 ## Banco de dados
 
 - **Desenvolvimento:** sem `DATABASE_URL`, o servidor usa SQLite no arquivo `DB_PATH`. Não precisa instalar nada.
@@ -92,6 +106,7 @@ Exemplo: com prêmio mensal líquido de R$ 34,07, a comissão é de R$ 10,22 por
 | POST | `/api/admin/renovacoes/processar` | Você | Roda a renovação na hora (o agendador já faz isso todo dia) |
 | GET | `/api/admin/agendamentos` | Você | Histórico das execuções diárias do agendador |
 | GET | `/api/admin/vencimentos?dias=90` | Você | Lista as apólices que vencem nos próximos dias |
+| GET | `/api/admin/propostas?status=&busca=` | Você | Lista as propostas (CPF mascarado, sem declaração de saúde) |
 | POST | `/api/admin/propostas/:numero/renovacao` | Você | Liga ou desliga a renovação automática de uma apólice |
 
 - As rotas de admin exigem o cabeçalho `x-admin-token`.
