@@ -24,12 +24,13 @@ function statusInicial(statusProposta) {
 }
 
 // Atualiza as comissões quando a seguradora muda o status da proposta.
-function aoMudarStatusProposta(db, numero, novoStatus) {
+// db: banco ou transação de ./db (get/all/run assíncronos).
+async function aoMudarStatusProposta(db, numero, novoStatus) {
   if (['ACEITA', 'APOLICE_EMITIDA'].includes(novoStatus)) {
-    db.prepare(`UPDATE comissoes SET status='A_RECEBER' WHERE proposta_numero=? AND status='PREVISTA'`).run(numero);
+    await db.run(`UPDATE comissoes SET status='A_RECEBER' WHERE proposta_numero=? AND status='PREVISTA'`, numero);
   }
   if (['RECUSADA', 'CANCELADA'].includes(novoStatus)) {
-    db.prepare(`UPDATE comissoes SET status='CANCELADA' WHERE proposta_numero=? AND status IN ('PREVISTA','A_RECEBER')`).run(numero);
+    await db.run(`UPDATE comissoes SET status='CANCELADA' WHERE proposta_numero=? AND status IN ('PREVISTA','A_RECEBER')`, numero);
   }
 }
 

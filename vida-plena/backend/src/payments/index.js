@@ -1,8 +1,11 @@
 'use strict';
 
-// Pagamento com cartão. O app NUNCA manda o número do cartão para este servidor:
-// ele tokeniza o cartão direto no gateway (SDK do Pagar.me, Stripe, Mercado Pago...)
-// e envia só o token. Assim este servidor fica fora do escopo pesado do PCI-DSS.
+// Pagamento com cartão. A cobrança é feita pela plataforma da Tokio Marine (PAYMENTS=tokio),
+// depois da integração com a API dela. Até lá, roda a simulação (PAYMENTS=mock).
+//
+// O app NUNCA manda o número do cartão para este servidor: ele tokeniza o cartão no
+// navegador (SDK/checkout da Tokio) e envia só o token. Assim este servidor fica fora
+// do escopo pesado do PCI-DSS.
 //
 // Interface:
 //   cobrar({ token, valor, parcelas, recorrente, descricao, referencia })
@@ -24,15 +27,22 @@ function mock() {
   };
 }
 
-function gateway(config) {
-  if (!config.gatewayApiKey) throw new Error('PAYMENTS=gateway exige GATEWAY_API_KEY');
-  // TODO: implementar com o SDK/REST do gateway escolhido.
-  // Mensal: criar assinatura (cobrança recorrente). Anual: cobrança única parcelada.
+// Cobrança pela Tokio: usa a mesma conexão autenticada da integração da seguradora.
+// As cobranças seguintes (mensalidades, anuidades, renovações) chegam pelo
+// webhook /api/webhooks/pagamentos, e cada uma aprovada gera a comissão.
+function tokio(insurer) {
+  if (!insurer || typeof insurer.cobrar !== 'function') {
+    throw new Error('PAYMENTS=tokio exige INSURER=tokio (a cobrança usa a API da Tokio Marine)');
+  }
   return {
-    nome: 'gateway',
-    async cobrar() { throw Object.assign(new Error('Gateway de pagamento ainda não implementado'), { status: 501 }); },
-    async estornar() { throw Object.assign(new Error('Gateway de pagamento ainda não implementado'), { status: 501 }); },
+    nome: 'tokio',
+    cobrar: dados => insurer.cobrar(dados),
+    estornar: dados => insurer.estornar(dados),
   };
 }
 
-module.exports = config => (config.payments === 'gateway' ? gateway(config) : mock());
+module.exports = (config, { insurer } = {}) => {
+  if (config.payments === 'tokio') return tokio(insurer);
+  if (config.payments !== 'mock') throw new Error(`PAYMENTS inválido: "${config.payments}" (use "mock" ou "tokio")`);
+  return mock();
+};

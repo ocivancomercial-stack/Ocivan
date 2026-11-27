@@ -19,6 +19,7 @@ App de venda de **seguro de vida individual 100% digital**: cotação, escolha d
   - O cliente nunca vê a comissão.
 - **Vigência de 5 anos com renovação automática** (`VIGENCIA_ANOS`).
   - A renovação é processada 30 dias antes do fim e estende a vigência por mais 5 anos.
+  - Roda sozinha todo dia às 3h de Brasília pelo agendador interno (`src/agendador.js`), uma vez por dia mesmo com vários servidores.
   - Pode ser desligada por apólice.
 - **Idade de aceitação:** 18 a 65 anos.
 - **Coberturas:**
@@ -33,9 +34,9 @@ App de venda de **seguro de vida individual 100% digital**: cotação, escolha d
 - **Tabela de preços:** a do mock é fictícia.
 
 ## Segurança (obrigatório)
-- O número do cartão **nunca** chega ao servidor: o cartão é tokenizado no gateway e o servidor recusa números de cartão.
+- O número do cartão **nunca** chega ao servidor: o cartão é tokenizado no navegador pela plataforma de pagamento da Tokio e o servidor recusa números de cartão.
 - As credenciais da Tokio ficam só no servidor (`.env`), nunca no front-end.
-- A declaração de saúde é dado sensível pela LGPD. Em produção, deve ser criptografada no banco.
+- A declaração de saúde é dado sensível pela LGPD: é gravada cifrada (AES-256-GCM, `CHAVE_DADOS_SENSIVEIS`, `src/services/cripto.js`). Nunca gravar nem registrar em log em texto puro.
 - Webhooks exigem `x-webhook-secret`. Rotas `/api/admin/*` exigem `x-admin-token`.
 
 ## Estrutura
@@ -44,21 +45,27 @@ frontend/index.html   app (HTML único, azul e branco, foto familia.jpg)
                       Servido pelo backend em http://localhost:3000, chama /api/cotacoes, /api/propostas e /api/pagamentos.
                       Sem servidor (arquivo aberto direto ou protótipo publicado), cai na simulação local.
                       A tokenização do cartão ainda é simulada no navegador (gera tok_aprova_XXXX / tok_recusa_0002).
-backend/              servidor Node.js 22.5+ sem dependências (http nativo + node:sqlite)
+backend/              servidor Node.js 22.5+ (http nativo; única dependência: pg)
   src/server.js       servidor HTTP: API em /api/* e arquivos do frontend/ na mesma origem
-  src/app.js          rotas e regras do fluxo
+  src/app.js          rotas e regras do fluxo (renovarVencendo() é usada pela rota e pelo agendador)
+  src/agendador.js    tarefas diárias; reserva o dia na tabela agendamentos
+  src/services/datas.js  datas no fuso do negócio (FUSO_HORARIO); não usar a data UTC
+  src/db/             banco: PostgreSQL com DATABASE_URL (produção), senão SQLite (dev e testes); mesma interface assíncrona
+                      O SQL usa "?" nos parâmetros e só recursos comuns aos dois bancos (db.mes() para agrupar por mês).
   src/insurer/        tokioMarine.mock.js (simulação) e tokioMarine.http.js (esqueleto da API real; rotas são suposições)
-  src/payments/       pagamento simulado e esqueleto do gateway
+  src/payments/       cobrança simulada (PAYMENTS=mock) e cobrança pela Tokio (PAYMENTS=tokio, usa tokioMarine.http.js)
   src/services/       comissao.js, validacao.js
-  test/fluxo.test.js  10 testes do fluxo completo
+  test/fluxo.test.js  19 testes do fluxo completo (SQLite e PostgreSQL)
 docs/telas/           capturas das telas para apresentação
 ```
 
 ## Comandos
 ```bash
 cd backend
+npm install
 cp .env.example .env
-npm test        # node --test
+npm test        # node --test (SQLite em memória)
+TEST_DATABASE_URL=postgres://... npm test   # mesmos testes no PostgreSQL (schema temporário)
 npm start       # app e API em http://localhost:3000
 ```
 Para ver o app ligado ao servidor, abra http://localhost:3000. Abrindo `frontend/index.html` direto, ele roda em modo simulação.
@@ -66,20 +73,24 @@ Para apontar o app para outro servidor: `index.html?api=https://api.exemplo.com.
 
 ## Próximas tarefas sugeridas
 1. ~~Ligar o front-end ao backend.~~ Feito: o painel de integração mostra as chamadas reais ao servidor.
-2. **Gateway de pagamento real** (Pagar.me, Stripe ou Mercado Pago):
-   - tokenização do cartão no front-end (trocar `tokenizarCartao()` do `index.html` pelo SDK do gateway);
-   - assinatura no plano mensal;
-   - cobrança parcelada no plano anual.
-3. **Banco de produção:**
-   - migrar de SQLite para PostgreSQL;
-   - criptografar `declaracao_saude_json`.
+2. **Cobrança pela plataforma da Tokio Marine** (decisão do corretor: não haverá gateway próprio).
+   - Já pronto: `PAYMENTS=tokio` (exige `INSURER=tokio`) chama `cobrar`/`estornar` de `tokioMarine.http.js`. Rotas e campos são suposições.
+   - Falta, com a documentação da Tokio: ajustar rotas e campos; trocar `tokenizarCartao()` do `index.html` pelo SDK/checkout da Tokio; ajustar o formato do webhook `/api/webhooks/pagamentos` ao aviso de cobrança da Tokio.
+3. ~~Banco de produção.~~ Feito: PostgreSQL com `DATABASE_URL` e declaração de saúde cifrada. Falta só criar o banco gerenciado na publicação (tarefa 6).
 4. **Painel administrativo** para o corretor: comissões, vencimentos e renovações.
 5. **Integração real com a Tokio**, quando houver documentação: ajustar `tokioMarine.http.js` e usar `INSURER=tokio`.
 6. **Publicação:** transformar o front-end em PWA ou app (React Native/Expo), com domínio próprio e HTTPS.
+7. ~~Agendador da renovação automática.~~ Feito: `src/agendador.js`, todo dia às 3h de Brasília.
+8. **E-mails:** o app promete enviar a apólice por e-mail, mas o sistema ainda não envia nenhum.
+9. **Proteção contra abuso:** limite de requisições por IP nas rotas públicas.
+10. **Tela "minha proposta"** para o cliente acompanhar o status (a rota `GET /api/propostas/:numero` já existe).
 
 ## Pendências com a Tokio Marine
 - Acesso à API e ambiente de homologação.
-- Forma de cobrança: pela Tokio ou por gateway da corretora.
+- Cobrança (decidido: pela plataforma da Tokio). Perguntar:
+  - como o cartão é tokenizado no app (SDK, iframe ou link de pagamento);
+  - se a Tokio cuida da recorrência mensal e do parcelamento anual (até 12x);
+  - como avisa cada cobrança aprovada ou recusada (webhook) e se estorna sozinha ao recusar a proposta.
 - Limite de corretagem do produto e forma de repasse.
 - Regra de renovação: recálculo por idade e índice de reajuste.
 - Condições gerais, tabela de preços e regras de subscrição.

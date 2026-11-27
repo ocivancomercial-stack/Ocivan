@@ -4,10 +4,11 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const config = require('./config');
-const db = require('./db').open(config.dbPath);
+const { abrirBanco } = require('./db');
+const { criarAgendador } = require('./agendador');
 const insurer = require('./insurer')(config);
-const payments = require('./payments')(config);
-const app = require('./app')({ config, db, insurer, payments });
+const payments = require('./payments')(config, { insurer });
+let app; // criado depois que o banco abre (veja iniciar())
 
 const LIMITE_CORPO = 100 * 1024;
 
@@ -74,6 +75,26 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(config.port, () => {
-  console.log(`App e API em http://localhost:${config.port} · seguradora=${insurer.nome} · pagamentos=${payments.nome} · comissão=${config.comissaoPercentual}%`);
-});
+async function iniciar() {
+  const db = await abrirBanco(config);
+  app = require('./app')({ config, db, insurer, payments });
+  const agendador = config.agendadorAtivo
+    ? criarAgendador({ db, tarefa: 'renovacoes', hora: config.renovacaoHora, fusoHorario: config.fusoHorario, executar: data => app.renovarVencendo(data) })
+    : null;
+  server.listen(config.port, () => {
+    console.log(`App e API em http://localhost:${config.port} · banco=${db.dialeto} · seguradora=${insurer.nome} · pagamentos=${payments.nome} · comissão=${config.comissaoPercentual}%`);
+    if (agendador) {
+      agendador.iniciar();
+      console.log(`Renovação automática: todo dia a partir das ${config.renovacaoHora}h (${config.fusoHorario})`);
+    } else console.log('Renovação automática: agendador desligado (AGENDADOR_ATIVO=false)');
+  });
+  // Desligamento limpo (deploy, reinício): para o agendador, as conexões e fecha o banco.
+  const desligar = () => {
+    setTimeout(() => process.exit(1), 10_000).unref();
+    server.close(async () => { await agendador?.parar(); await db.fechar(); process.exit(0); });
+  };
+  process.on('SIGTERM', desligar);
+  process.on('SIGINT', desligar);
+}
+
+iniciar().catch(e => { console.error('Falha ao iniciar:', e.message); process.exit(1); });

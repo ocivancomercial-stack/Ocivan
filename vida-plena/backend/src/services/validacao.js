@@ -24,6 +24,13 @@ function cpfValido(cpf) {
   return dv(9) === +d[9] && dv(10) === +d[10];
 }
 
+// Data AAAA-MM-DD válida (ex.: filtros e datas de referência das rotas de admin).
+function data(v, campo) {
+  const ok = typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && new Date(v + 'T00:00:00Z').toISOString().slice(0, 10) === v;
+  if (!ok) falha(`${campo} deve ser uma data no formato AAAA-MM-DD`);
+  return v;
+}
+
 function cotacao(b) {
   if (!b || typeof b !== 'object') falha('Corpo da requisição inválido');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.nascimento || '')) falha('nascimento deve estar no formato AAAA-MM-DD');
@@ -73,10 +80,10 @@ function pagamento(b) {
   if (!b || typeof b !== 'object') falha('Corpo da requisição inválido');
   if (typeof b.numeroProposta !== 'string') falha('numeroProposta obrigatório');
   if (typeof b.tokenCartao !== 'string' || !b.tokenCartao) falha('tokenCartao obrigatório (nunca envie o número do cartão)');
-  if (/^\d{12,19}$/.test(b.tokenCartao.replace(/\s/g, ''))) falha('Envie o token do gateway, não o número do cartão');
+  if (/^\d{12,19}$/.test(b.tokenCartao.replace(/\s/g, ''))) falha('Envie o token do cartão, não o número do cartão');
   const parcelas = b.parcelas === undefined ? 1 : b.parcelas;
   if (![1, 2, 3, 4, 6, 10, 12].includes(parcelas)) falha('parcelas inválidas');
   return { numeroProposta: b.numeroProposta, tokenCartao: b.tokenCartao, parcelas };
 }
 
-module.exports = { cotacao, proposta, pagamento, cpfValido, ErroValidacao };
+module.exports = { cotacao, proposta, pagamento, data, cpfValido, ErroValidacao };
