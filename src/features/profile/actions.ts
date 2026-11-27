@@ -44,3 +44,20 @@ export async function setDefaultAddressAction(formData: FormData) {
   await setDefaultAddress(user.id, String(formData.get("id") ?? ""));
   revalidatePath("/perfil");
 }
+
+export async function updateAvatarAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireUser("/perfil");
+  const file = formData.get("avatar");
+  if (!(file instanceof File) || file.size === 0) return { message: "Escolha uma imagem." };
+  if (file.size > 8 * 1024 * 1024) return { message: "A imagem pode ter no máximo 8 MB." };
+  try {
+    const { updateAvatar } = await import("./service");
+    await updateAvatar(user.id, Buffer.from(await file.arrayBuffer()));
+  } catch (e) {
+    const { ImageValidationError } = await import("@/services/images/process");
+    return { message: e instanceof ImageValidationError ? e.message : "Não foi possível salvar a foto." };
+  }
+  await audit({ actorId: user.id, action: "profile.avatar", entityType: "user", entityId: user.id });
+  revalidatePath("/perfil");
+  return { ok: true, message: "Foto atualizada." };
+}

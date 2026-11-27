@@ -41,5 +41,5 @@ yarn-error.log*
 next-env.d.ts
 
 # uploads locais (STORAGE_DRIVER=local)
-/public/uploads/
+/.data/
 !.env.example

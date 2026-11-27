@@ -35,7 +35,7 @@ Mapeamento dos nomes do briefing: `price → priceCents`, `subtotal → subtotal
 
 - Índice único parcial: **uma única reserva `ACTIVE` por produto** (impede dois checkouts da mesma peça, mesmo sob concorrência).
 - `CHECK`: preço > 0, nota 1–5, quantidades > 0, valores do pedido ≥ 0, comissão entre 0 e 50%.
-- Índice GIN de busca textual em português (`to_tsvector('portuguese', title || description)`).
+- Busca textual (migration `search_unaccent`): extensão `unaccent`, funções `immutable_unaccent()` e `product_search_vector()` (título peso A, descrição peso B) e índice GIN. **Requer permissão para `CREATE EXTENSION unaccent`** (disponível em Supabase e Neon).
 
 ## Índices
 

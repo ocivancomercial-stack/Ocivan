@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Heart, PlusCircle, ShoppingBag, User } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
@@ -29,8 +30,8 @@ export async function Header() {
           </Link>
           {user ? (
             <Link href="/perfil" className="flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3 text-sm font-semibold hover:bg-brand-50">
-              <span className="grid size-8 place-items-center rounded-full bg-brand-50 text-brand-900">
-                {user.name.charAt(0).toUpperCase()}
+              <span className="relative grid size-8 place-items-center overflow-hidden rounded-full bg-brand-50 text-brand-900">
+                {user.avatar ? <Image src={user.avatar} alt="" fill sizes="32px" className="object-cover" /> : user.name.charAt(0).toUpperCase()}
               </span>
               {user.name.split(" ")[0]}
             </Link>

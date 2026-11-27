@@ -24,7 +24,10 @@ Navegador / PWA ──► proxy.ts (checagem otimista de sessão)
 | **Prisma 6** | Linha estável e madura (a 7 mudou o modelo de drivers; a "latest" do npm é RC). |
 | **Valores em centavos (Int)** | Evita erros de ponto flutuante em preços, comissão e repasses. |
 | **Comissão em pontos-base** | `1200 bps = 12%`; configurável em `platform_settings`. |
-| **Abstrações de provedores** | `EmailProvider` (pronto), `StorageProvider`, `PaymentProvider`, `ShippingProvider`, `ListingAssistant` (IA) nas próximas etapas — trocar fornecedor sem reescrever regras. |
+| **Abstrações de provedores** | `EmailProvider` e `StorageProvider` (prontos), `ListingAssistant` (IA — interface pronta, sem provedor), `PaymentProvider` e `ShippingProvider` (Etapa 5) — trocar fornecedor sem reescrever regras. |
+| **Busca no PostgreSQL** | Full-text `portuguese` + `unaccent` com índice GIN e prefixo; suficiente para o volume regional do MVP sem custo de serviço externo (Algolia/Meilisearch podem entrar depois). |
+| **Distância sem geolocalização** | Cada anúncio guarda só a cidade; o raio é calculado entre centros de municípios (Haversine). Privacidade por padrão e zero custo. |
+| **Imagens** | Compressão no navegador + reprocessamento no servidor (sharp). Upload enviado com o formulário final (limite de 10 MB por envio). |
 | **Simulação nunca em produção** | `src/lib/env.ts` recusa iniciar com `APP_ENV=production` e qualquer driver simulado. Faixa amarela visível fora de produção. |
 | **`legacy-peer-deps`** | O npm 10 falha ao resolver os peers opcionais do Better Auth (`edgesOut` null). Não afeta o runtime. |
 

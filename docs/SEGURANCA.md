@@ -23,10 +23,15 @@
 | Logs estruturados com redação de campos sensíveis | `src/lib/logger.ts` |
 | Validação de ambiente: produção recusa simulações e segredos de dev | `src/lib/env.ts` |
 | Dados pessoais: endereço nunca público; anúncio mostra só a cidade | design do schema |
+| Upload: formato verificado pelo conteúdo (não pela extensão), SVG recusado, limite 8 MB/foto e 8 fotos, mínimo 300px, limite de pixels (anti "bomba de descompressão"), reencode WebP e remoção de EXIF/GPS | `src/services/images/process.ts` |
+| Chaves de storage geradas pelo servidor (UUID) e validadas contra path traversal | `src/services/storage` |
+| Página pública do produto não expõe e-mail, telefone nem sobrenome do vendedor (testado) | `getProductForPage` |
+| Edição/pausa/exclusão filtradas pelo dono; atualização condicional de status contra corrida | `features/products/service.ts` |
+| Bloqueio de contato fora da plataforma em anúncios; denúncias com rate limit e sem duplicidade | `schemas/product.ts`, `report-service.ts` |
+| Busca: tsquery montada só com letras/dígitos e SQL parametrizado | `features/products/search.ts` |
 
 ## Próximas etapas
 
-- Upload: validação de tipo real (magic bytes), tamanho, reencode para WebP removendo EXIF/GPS (Etapa 3).
 - Webhooks: verificação de assinatura + idempotência (Etapa 5).
 - CSP com nonce (remover `'unsafe-inline'` de scripts) e verificação de e-mail obrigatória antes de vender (Etapa 6).
 - Exclusão de conta/anonimização e exportação de dados (LGPD, Etapa 6).

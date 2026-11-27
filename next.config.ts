@@ -46,6 +46,7 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
+    localPatterns: [{ pathname: "/uploads/**", search: "" }, { pathname: "/icons/**", search: "" }],
     remotePatterns: supabaseHost ? [{ protocol: "https", hostname: supabaseHost, pathname: "/storage/v1/object/public/**" }] : [],
   },
   experimental: {

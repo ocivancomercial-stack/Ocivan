@@ -15,7 +15,19 @@ Arquitetura, stack, estrutura de pastas, modelo de dados e riscos (ver ARQUITETU
 - Segurança base, rate limit, auditoria, logs, validação de ambiente, CI.
 - 60 testes (unitários + integração).
 
-## Etapa 3 — Marketplace
+## Etapa 3 — Marketplace ✅
+- Storage com abstração (`local` em dev, `supabase` em produção); fotos validadas pelo conteúdo real, reencodadas em WebP (máx. 1600px) e **sem EXIF/GPS**; compressão no celular antes do envio.
+- Fluxo de venda em 4 etapas (fotos → detalhes → preço → revisão) com até 8 fotos, reordenação e capa; prévia do repasse (comissão 12%).
+- Bloqueio de telefone/e-mail/redes sociais em título, descrição e defeitos.
+- Meus anúncios: editar, pausar, reativar, excluir, publicar rascunho; estados com máquina de transição testada; moderação `auto`/`manual` configurável.
+- Busca full-text em português sem acento e com prefixo (+ marca), filtros reais no banco (categoria, subcategoria, marca, tamanho, estado, preço, cidade, distância aproximada), ordenação e paginação.
+- Página do produto: galeria, detalhes, defeitos, vendedor (nome abreviado, cidade, avaliação), semelhantes, favoritar, denunciar.
+- Favoritos, vitrine Explorar (perto de você, recentes, destaques, sugestões), landing com produtos reais, foto de perfil.
+- Assistente de anúncio por IA: interface desacoplada e sanitização das sugestões; **nenhum provedor ligado** (aguarda decisão de fornecedor/custo).
+- 119 testes.
+- Pendências conhecidas: botão "Comprar agora" desabilitado até a Etapa 4; fila de moderação no admin (Etapa 4).
+
+### Planejado originalmente para a Etapa 3
 Storage (local/Supabase) com validação e reencode de imagens · criar anúncio em etapas (até 8 fotos) · editar/pausar/excluir/reativar ·
 moderação opcional · busca full-text + filtros reais + distância · página do produto · favoritos · foto de perfil · anúncios de exemplo (marcados) ·
 assistente de anúncio por IA (interface desacoplada, opcional).

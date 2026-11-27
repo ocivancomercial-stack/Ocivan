@@ -11,8 +11,8 @@ Aplicação web responsiva (PWA na Etapa 6), com backend preparado para futuros 
 |---|---|---|
 | 1 | Planejamento técnico | ✅ Concluída |
 | 2 | Fundação: Next.js, Tailwind, PostgreSQL, Prisma, autenticação, layout | ✅ Concluída |
-| 3 | Marketplace: anúncios, fotos, busca, filtros, favoritos, página do produto | ⏳ Próxima |
-| 4 | Operação: carrinho, checkout, pedidos, painel do vendedor, painel admin | ⏳ |
+| 3 | Marketplace: anúncios, fotos, busca, filtros, favoritos, página do produto | ✅ Concluída |
+| 4 | Operação: carrinho, checkout, pedidos, painel do vendedor, painel admin | ⏳ Próxima |
 | 5 | Integrações: Mercado Pago, webhooks, Melhor Envio | ⏳ |
 | 6 | PWA, SEO, monitoramento, revisão de segurança, deploy | ⏳ |
 
@@ -65,6 +65,8 @@ npm run build && npm start  # build de produção local
 ```
 
 Em desenvolvimento, e-mails (ex.: redefinição de senha) **não são enviados**: o conteúdo aparece no log do servidor (`email.simulated`).
+
+Fotos enviadas em desenvolvimento ficam em `.data/uploads/` (fora do Git) e são servidas por `/uploads/*`. O seed cria 20 anúncios **fictícios** (selo "Exemplo") de vendedores sem senha.
 
 ## Testes
 

@@ -30,3 +30,18 @@ export async function setDefaultAddress(userId: string, addressId: string): Prom
   ]);
   return true;
 }
+
+/** Troca a foto de perfil: valida/reencoda (quadrada 400px, sem EXIF), grava e remove a anterior. */
+export async function updateAvatar(userId: string, file: Buffer) {
+  const { processUploadedImage } = await import("@/services/images/process");
+  const { getStorage } = await import("@/services/storage");
+  const { randomUUID } = await import("node:crypto");
+  const img = await processUploadedImage(file, { maxSide: 400, square: true });
+  const storage = getStorage();
+  const { url } = await storage.put(`avatars/${randomUUID()}.webp`, img.data, img.contentType);
+  const previous = await prisma.user.findUnique({ where: { id: userId }, select: { avatar: true } });
+  await prisma.user.update({ where: { id: userId }, data: { avatar: url } });
+  const oldKey = previous?.avatar?.match(/avatars\/[a-f0-9-]+\.webp$/)?.[0];
+  if (oldKey) await storage.remove([oldKey]);
+  return url;
+}

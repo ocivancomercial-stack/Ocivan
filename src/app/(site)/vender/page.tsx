@@ -1,10 +1,27 @@
 import type { Metadata } from "next";
-import { UnderConstruction } from "@/components/layout/under-construction";
+import Link from "next/link";
+import { ListingForm } from "@/features/products/listing-form/listing-form";
+import { listCatalogOptions } from "@/features/products/queries";
 import { requireUser } from "@/lib/session";
+import { getSetting } from "@/lib/settings";
 
-export const metadata: Metadata = { title: "Vender" };
+export const metadata: Metadata = { title: "Vender", robots: { index: false } };
 
-export default async function Page() {
-  await requireUser("/vender");
-  return <UnderConstruction title="Vender" stage={3} description="Fluxo de anúncio em etapas: fotos, dados, preço, revisão e publicação." />;
+export default async function SellPage() {
+  const user = await requireUser("/vender");
+  const [[categories, brands], feeBps] = await Promise.all([listCatalogOptions(), getSetting("platform_fee_bps")]);
+  return (
+    <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold">Novo anúncio</h1>
+          <p className="text-sm text-muted">Fotos, detalhes, preço e pronto. Leva poucos minutos.</p>
+        </div>
+        <Link href="/vender/anuncios" className="shrink-0 text-sm font-semibold text-brand hover:underline">
+          Meus anúncios
+        </Link>
+      </div>
+      <ListingForm categories={categories} brands={brands} feeBps={feeBps} defaultCity={user.city ?? "Curitiba"} />
+    </div>
+  );
 }

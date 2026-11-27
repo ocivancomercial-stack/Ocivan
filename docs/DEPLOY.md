@@ -28,7 +28,7 @@ DATABASE_URL=... npm run admin:promote -- voce@empresa.com.br
 - [ ] Domínio próprio com HTTPS; `BETTER_AUTH_URL` e `NEXT_PUBLIC_APP_URL` com `https://`
 - [ ] Segredos gerados com `openssl` (não reutilizar os de dev)
 - [ ] Resend com domínio verificado (SPF/DKIM)
-- [ ] Bucket de imagens criado (Etapa 3)
+- [ ] Bucket público `product-images` no Supabase Storage (leitura pública; gravação só com a service role no servidor) e `STORAGE_DRIVER=supabase`
 - [ ] Credenciais de produção do Mercado Pago e Melhor Envio homologadas (Etapa 5)
 - [ ] Textos legais revisados por advogado
 - [ ] Backups automáticos do banco habilitados

@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LogOut, MapPin, Package, ShieldCheck, Star, Store } from "lucide-react";
+import { LogOut, MapPin, Package, ShieldCheck, Star, Store, Tag } from "lucide-react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { signOutAction } from "@/features/auth/actions";
 import { deleteAddressAction, setDefaultAddressAction } from "@/features/profile/actions";
 import { AddressForm } from "@/features/profile/address-form";
+import { AvatarForm } from "@/features/profile/avatar-form";
 import { ProfileForm } from "@/features/profile/profile-form";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
@@ -22,6 +23,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   ]);
 
   const shortcuts = [
+    { href: "/vender/anuncios", label: "Meus anúncios", icon: Tag },
     { href: "/perfil/compras", label: "Minhas compras", icon: Package },
     { href: "/perfil/vendas", label: "Painel do vendedor", icon: Store },
     { href: "/privacidade/meus-dados", label: "Meus dados (LGPD)", icon: ShieldCheck },
@@ -32,9 +34,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       {bemvindo && <Alert tone="success">Conta criada! Complete seu endereço para comprar com mais rapidez.</Alert>}
 
       <div className="flex items-center gap-4">
-        <span className="grid size-16 place-items-center rounded-full bg-brand text-2xl font-extrabold text-white">
-          {user.name.charAt(0).toUpperCase()}
-        </span>
+        <AvatarForm name={user.name} avatar={user.avatar} />
         <div>
           <h1 className="text-2xl font-extrabold">{user.name}</h1>
           <p className="text-sm text-muted">
@@ -47,7 +47,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         </div>
       </div>
 
-      <ul className="grid gap-3 sm:grid-cols-3">
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {shortcuts.map((s) => (
           <li key={s.href}>
             <Link href={s.href} className="flex items-center gap-3 rounded-card bg-surface p-4 shadow-card hover:ring-2 hover:ring-brand-100">
@@ -61,7 +61,6 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       <Card className="space-y-4 p-6">
         <h2 className="text-lg font-bold">Dados pessoais</h2>
         <ProfileForm user={user} />
-        <p className="text-xs text-muted">Foto de perfil: disponível junto com o upload de imagens (Etapa 3).</p>
       </Card>
 
       <Card className="space-y-4 p-6">
