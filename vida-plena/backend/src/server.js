@@ -1,6 +1,8 @@
 'use strict';
 
 const http = require('node:http');
+const fs = require('node:fs');
+const path = require('node:path');
 const config = require('./config');
 const db = require('./db').open(config.dbPath);
 const insurer = require('./insurer')(config);
@@ -8,6 +10,28 @@ const payments = require('./payments')(config);
 const app = require('./app')({ config, db, insurer, payments });
 
 const LIMITE_CORPO = 100 * 1024;
+
+// O app (front-end) é servido pelo próprio servidor, na mesma origem da API: sem CORS.
+const PASTA_APP = path.resolve(config.frontendDir);
+const TIPOS = { '.html': 'text/html; charset=utf-8', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+  '.svg': 'image/svg+xml', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.ico': 'image/x-icon',
+  '.webmanifest': 'application/manifest+json' };
+
+function servirApp(pathname, res) {
+  let rel;
+  try { rel = decodeURIComponent(pathname); } catch { rel = ''; }
+  if (rel.endsWith('/')) rel += 'index.html';
+  const arq = path.resolve(PASTA_APP, '.' + rel);
+  const tipo = TIPOS[path.extname(arq).toLowerCase()];
+  // Bloqueia saída da pasta do app e arquivos de tipos não previstos.
+  if (!arq.startsWith(PASTA_APP + path.sep) || !tipo) return false;
+  let corpo;
+  try { corpo = fs.readFileSync(arq); } catch { return false; }
+  res.writeHead(200, { 'content-type': tipo, 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer',
+    'cache-control': tipo.startsWith('text/html') ? 'no-cache' : 'public, max-age=3600' });
+  res.end(corpo);
+  return true;
+}
 
 function lerCorpo(req) {
   return new Promise((resolve, reject) => {
@@ -35,6 +59,10 @@ const server = http.createServer(async (req, res) => {
 
   try {
     const url = new URL(req.url, 'http://localhost');
+    if ((req.method === 'GET' || req.method === 'HEAD') && !url.pathname.startsWith('/api/')) {
+      if (servirApp(url.pathname, res)) return;
+      return enviar(404, { erro: 'Arquivo não encontrado' });
+    }
     const body = req.method === 'POST' ? await lerCorpo(req) : undefined;
     const [status, json] = await app.handle({
       method: req.method, path: url.pathname, query: Object.fromEntries(url.searchParams),
@@ -47,5 +75,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(config.port, () => {
-  console.log(`API em http://localhost:${config.port} · seguradora=${insurer.nome} · pagamentos=${payments.nome} · comissão=${config.comissaoPercentual}%`);
+  console.log(`App e API em http://localhost:${config.port} · seguradora=${insurer.nome} · pagamentos=${payments.nome} · comissão=${config.comissaoPercentual}%`);
 });

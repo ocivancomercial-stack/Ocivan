@@ -97,6 +97,12 @@ test('validações e segurança', async () => {
   assert.equal((await call('POST', '/api/webhooks/seguradora', { numeroProposta: 'X', status: 'ACEITA' }, {}))[0], 401);
 });
 
+test('rota pública /api/saude não expõe a comissão', async () => {
+  const [s, r] = await call('GET', '/api/saude');
+  assert.equal(s, 200); assert.equal(r.ok, true);
+  assert.ok(!/comiss/i.test(JSON.stringify(r)), 'nenhum campo de comissão na rota pública');
+});
+
 test('resumo do programa de comissão', async () => {
   const [s, r] = await call('GET', '/api/admin/comissoes/resumo', null, ADM);
   assert.equal(s, 200); assert.equal(r.percentualVigente, 30);

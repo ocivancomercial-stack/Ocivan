@@ -40,14 +40,17 @@ App de venda de **seguro de vida individual 100% digital**: cotação, escolha d
 
 ## Estrutura
 ```
-frontend/index.html   protótipo do app (HTML único, azul e branco, foto familia.jpg)
-                      Usa um adaptador SIMULADO no próprio navegador; ainda NÃO chama o backend.
+frontend/index.html   app (HTML único, azul e branco, foto familia.jpg)
+                      Servido pelo backend em http://localhost:3000, chama /api/cotacoes, /api/propostas e /api/pagamentos.
+                      Sem servidor (arquivo aberto direto ou protótipo publicado), cai na simulação local.
+                      A tokenização do cartão ainda é simulada no navegador (gera tok_aprova_XXXX / tok_recusa_0002).
 backend/              servidor Node.js 22.5+ sem dependências (http nativo + node:sqlite)
+  src/server.js       servidor HTTP: API em /api/* e arquivos do frontend/ na mesma origem
   src/app.js          rotas e regras do fluxo
   src/insurer/        tokioMarine.mock.js (simulação) e tokioMarine.http.js (esqueleto da API real; rotas são suposições)
   src/payments/       pagamento simulado e esqueleto do gateway
   src/services/       comissao.js, validacao.js
-  test/fluxo.test.js  9 testes do fluxo completo
+  test/fluxo.test.js  10 testes do fluxo completo
 docs/telas/           capturas das telas para apresentação
 ```
 
@@ -56,16 +59,15 @@ docs/telas/           capturas das telas para apresentação
 cd backend
 cp .env.example .env
 npm test        # node --test
-npm start       # http://localhost:3000
+npm start       # app e API em http://localhost:3000
 ```
-Para ver o app, abra `frontend/index.html` no navegador.
+Para ver o app ligado ao servidor, abra http://localhost:3000. Abrindo `frontend/index.html` direto, ele roda em modo simulação.
+Para apontar o app para outro servidor: `index.html?api=https://api.exemplo.com.br` (o servidor precisa liberar a origem em `CORS_ORIGIN`).
 
 ## Próximas tarefas sugeridas
-1. **Ligar o front-end ao backend.**
-   - Trocar o objeto `Seguradora` do `index.html` por `fetch` às rotas `/api/cotacoes`, `/api/propostas` e `/api/pagamentos`.
-   - Manter o painel de integração para a demonstração.
+1. ~~Ligar o front-end ao backend.~~ Feito: o painel de integração mostra as chamadas reais ao servidor.
 2. **Gateway de pagamento real** (Pagar.me, Stripe ou Mercado Pago):
-   - tokenização do cartão no front-end;
+   - tokenização do cartão no front-end (trocar `tokenizarCartao()` do `index.html` pelo SDK do gateway);
    - assinatura no plano mensal;
    - cobrança parcelada no plano anual.
 3. **Banco de produção:**
