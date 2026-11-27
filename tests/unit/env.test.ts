@@ -29,6 +29,7 @@ describe("variáveis de ambiente", () => {
       EMAIL_PROVIDER: "resend",
       RESEND_API_KEY: "re_x",
       STORAGE_DRIVER: "supabase",
+      CRON_SECRET: "c".repeat(40),
     });
     expect(simulationAllowed(env)).toBe(false);
   });
@@ -37,6 +38,12 @@ describe("variáveis de ambiente", () => {
     expect(() =>
       parseEnv({ ...base, BETTER_AUTH_SECRET: "dev-only-secret-change-me-0123456789abcdef", APP_ENV: "production", PAYMENT_PROVIDER: "mercadopago", SHIPPING_PROVIDER: "melhorenvio", EMAIL_PROVIDER: "resend", RESEND_API_KEY: "x", STORAGE_DRIVER: "supabase" }),
     ).toThrow(/Segredo de desenvolvimento/);
+  });
+
+  it("exige CRON_SECRET em produção", () => {
+    expect(() =>
+      parseEnv({ ...base, APP_ENV: "production", PAYMENT_PROVIDER: "mercadopago", SHIPPING_PROVIDER: "melhorenvio", EMAIL_PROVIDER: "resend", RESEND_API_KEY: "x", STORAGE_DRIVER: "supabase" }),
+    ).toThrow(/CRON_SECRET/);
   });
 
   it("exige segredo de autenticação forte", () => {
