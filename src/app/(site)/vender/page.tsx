@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ListingForm } from "@/features/products/listing-form/listing-form";
 import { listCatalogOptions } from "@/features/products/queries";
 import { requireUser } from "@/lib/session";
+import { VerifyEmailBanner } from "@/features/auth/verify-email-banner";
 import { getSetting } from "@/lib/settings";
 import { isListingAssistantEnabled } from "@/services/ai/listing-assistant";
 
@@ -22,6 +23,7 @@ export default async function SellPage() {
           Meus anúncios
         </Link>
       </div>
+      {!user.emailVerified && <VerifyEmailBanner email={user.email} />}
       <ListingForm categories={categories} brands={brands} feeBps={feeBps}
         aiEnabled={isListingAssistantEnabled()} defaultCity={user.city ?? "Curitiba"} />
     </div>

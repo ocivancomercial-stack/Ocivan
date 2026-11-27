@@ -40,13 +40,25 @@
 ## Próximas etapas
 
 - Webhooks: verificação de assinatura + idempotência (Etapa 5).
-- CSP com nonce (remover `'unsafe-inline'` de scripts) e verificação de e-mail obrigatória antes de vender (Etapa 6).
-- Exclusão de conta/anonimização e exportação de dados (LGPD, Etapa 6).
-- Monitoramento de erros (Sentry ou similar) e alertas (Etapa 6).
+- Etapa 6 concluída: CSP com nonce, verificação de e-mail para publicar, LGPD (exportação/exclusão), monitoramento.
+- Recomendado antes do lançamento: pentest externo, revisão jurídica, 2FA para administradores, WAF/limite de requisições na borda (Vercel Firewall).
 
 ## Relato de vulnerabilidades
 
 Canal provisório: suporte@repassaai.com.br (a confirmar).
+
+## Etapa 6
+
+| Controle | Onde |
+|---|---|
+| CSP por requisição com **nonce** + `strict-dynamic` (sem `'unsafe-inline'` em scripts); `frame-src`/`frame-ancestors 'none'`, `object-src 'none'` | `src/lib/csp.ts`, `src/proxy.ts` (todas as páginas dinâmicas para receber o nonce) |
+| JSON-LD serializado sem permitir `</script>` | `features/seo/structured-data.ts` |
+| Publicar anúncio exige e-mail confirmado (anti-spam); link de 24 h | `lib/auth.ts`, `features/products/actions.ts` |
+| Exclusão de conta exige senha + confirmação digitada; anonimização e encerramento de sessões | `features/privacy` |
+| Exportação de dados sem senha/tokens; registro em `data_requests` | `/api/me/export` |
+| Service worker não guarda páginas privadas, API, checkout ou pedidos | `public/sw.js` |
+| Erros do servidor em log estruturado + alerta opcional sem dados sensíveis | `src/instrumentation.ts` |
+| `robots.txt` bloqueia indexação fora de produção e áreas privadas em produção | `src/app/robots.ts` |
 
 ## Integrações (Etapa 5)
 

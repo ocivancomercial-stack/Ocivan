@@ -7,7 +7,7 @@ import { logger } from "@/lib/logger";
 import { audit } from "@/lib/audit";
 import { passwordProblems, signUpSchema } from "@/schemas/auth";
 import { getEmailProvider } from "@/services/email";
-import { resetPasswordEmail } from "@/services/email/templates";
+import { resetPasswordEmail, verifyEmailTemplate } from "@/services/email/templates";
 
 /**
  * Autenticação com Better Auth (https://better-auth.com):
@@ -58,6 +58,15 @@ export const auth = betterAuth({
     },
   },
 
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    expiresIn: 60 * 60 * 24,
+    async sendVerificationEmail({ user, url }) {
+      await getEmailProvider().send({ to: user.email, ...verifyEmailTemplate(user.name, url) });
+    },
+  },
+
   rateLimit: {
     enabled: process.env.NODE_ENV !== "test" || process.env.RATE_LIMIT_IN_TESTS === "1",
     storage: "database",
@@ -69,6 +78,7 @@ export const auth = betterAuth({
       "/sign-up/email": { window: 60 * 10, max: 5 },
       "/request-password-reset": { window: 60 * 10, max: 3 },
       "/reset-password": { window: 60 * 10, max: 5 },
+      "/send-verification-email": { window: 60 * 10, max: 3 },
     },
   },
 

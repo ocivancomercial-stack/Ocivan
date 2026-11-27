@@ -127,8 +127,9 @@ describe("recuperação de senha", () => {
 
     const req = await call("/request-password-reset", { email: newUser.email, redirectTo: "/redefinir-senha" });
     expect(req.status).toBe(200);
-    expect(mailbox.sent).toHaveLength(1);
-    const token = mailbox.sent[0].text.match(/reset-password\/([^?\s]+)/)?.[1];
+    const resetMail = mailbox.sent.filter((m) => m.subject.includes("Redefinição"));
+    expect(resetMail).toHaveLength(1);
+    const token = resetMail[0].text.match(/reset-password\/([^?\s]+)/)?.[1];
     expect(token).toBeTruthy();
 
     const reset = await call("/reset-password", { token, newPassword: "NovaSenha2027" });

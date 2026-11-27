@@ -33,6 +33,7 @@ Validadas em `src/lib/env.ts`. Modelo em `.env.example`. **Nunca** versione `.en
 | `MELHORENVIO_TOKEN` | não | Token pessoal (alternativa ao OAuth da plataforma). |
 | `MELHORENVIO_API_URL` | não | Só para o simulador. |
 | `CRON_SECRET` | produção | Segredo (32+ caracteres) da rotina `/api/cron/release-reservations`, chamada pelo Vercel Cron a cada 5 min. |
+| `ERROR_ALERT_WEBHOOK_URL` | não | Webhook (Slack/Discord/Better Stack) para alertas de erro do servidor. Recebe só método, caminho, mensagem e digest. |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | não | Cria o primeiro admin no seed. Remova após uso. |
 | `TEST_DATABASE_URL` | testes | Banco exclusivo de testes (nome deve conter "test"). |
 

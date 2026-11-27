@@ -14,7 +14,7 @@ Aplicação web responsiva (PWA na Etapa 6), com backend preparado para futuros 
 | 3 | Marketplace: anúncios, fotos, busca, filtros, favoritos, página do produto | ✅ Concluída |
 | 4 | Operação: carrinho, checkout, pedidos, painel do vendedor, painel admin | ✅ Concluída |
 | 5 | Integrações: Mercado Pago, webhooks, Melhor Envio (+ modelo de teste) | ✅ Concluída (aguarda contas para homologar) |
-| 6 | PWA, SEO, monitoramento, revisão de segurança, deploy | ⏳ Próxima |
+| 6 | PWA, SEO, monitoramento, e-mails, LGPD, CSP com nonce, deploy | ✅ Concluída |
 
 Páginas ainda não implementadas exibem explicitamente "Em desenvolvimento — Etapa N". Nada é simulado como se estivesse pronto.
 Detalhes em [docs/ROADMAP.md](docs/ROADMAP.md).
@@ -76,6 +76,7 @@ npm test                    # unitários + integração
 npm run test:unit
 npm run test:integration
 npm run lint && npm run typecheck
+npm run check               # tudo acima de uma vez (o mesmo que o CI)
 ```
 
 Os testes de integração exercitam a API HTTP real de autenticação e as restrições do banco (ver `tests/`).

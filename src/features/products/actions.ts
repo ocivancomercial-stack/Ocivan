@@ -36,6 +36,9 @@ export async function saveListingAction(formData: FormData): Promise<SaveListing
 
   const intentRaw = String(formData.get("intent") ?? "publish");
   const intent = (["draft", "publish", "save"].includes(intentRaw) ? intentRaw : "publish") as "draft" | "publish" | "save";
+  // Anti-spam: publicar exige e-mail confirmado (rascunhos são permitidos).
+  if (intent !== "draft" && !user.emailVerified)
+    return { ok: false, message: "Confirme seu e-mail para publicar. Enviamos um link no cadastro — você pode reenviar no topo desta página." };
   const productId = formData.get("productId");
 
   try {
@@ -56,6 +59,8 @@ export async function saveListingAction(formData: FormData): Promise<SaveListing
 export async function changeListingStatusAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) return { ok: false, message: "Entre novamente." };
+  if (["publish", "reactivate"].includes(String(formData.get("action"))) && !user.emailVerified)
+    return { ok: false, message: "Confirme seu e-mail para publicar anúncios." };
   const action = String(formData.get("action"));
   if (!["publish", "pause", "reactivate", "remove"].includes(action)) return { ok: false, message: "Ação inválida" };
   try {

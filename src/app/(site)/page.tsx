@@ -18,11 +18,13 @@ const benefits = [
   { icon: BadgeCheck, title: "Vendedores avaliados", text: "Avaliações após cada compra ajudam você a escolher com confiança." },
 ];
 
-export default async function LandingPage() {
+export default async function LandingPage({ searchParams }: { searchParams: Promise<{ conta?: string }> }) {
   const categories = await listRootCategories();
+  const { conta } = await searchParams;
 
   return (
     <>
+      {conta === "excluida" && <p role="status" className="bg-brand-50 px-4 py-3 text-center text-sm text-brand-900">Sua conta foi excluída. Obrigado por ter feito parte do Repassa Aí.</p>}
       {/* Banner principal */}
       <section className="relative overflow-hidden bg-brand-900 text-white">
         <div aria-hidden className="absolute -right-32 -top-32 size-[28rem] rounded-full border-[64px] border-brand/30" />

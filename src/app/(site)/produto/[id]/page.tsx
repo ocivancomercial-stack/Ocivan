@@ -14,6 +14,7 @@ import { ReportForm } from "@/features/products/report-form";
 import { BuyButtons } from "@/features/cart/buy-buttons";
 import { getCurrentUser } from "@/lib/session";
 import { formatBRL } from "@/lib/utils";
+import { productJsonLd, serializeJsonLd } from "@/features/seo/structured-data";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -26,7 +27,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: product.title,
     description,
     robots: product.isSample ? { index: false } : undefined,
-    openGraph: { title: product.title, description, images: product.images[0] ? [product.images[0].imageUrl] : [] },
+    alternates: { canonical: `/produto/${product.id}` },
+    openGraph: { title: product.title, description, type: "website", images: product.images[0] ? [product.images[0].imageUrl] : [] },
   };
 }
 
@@ -47,8 +49,11 @@ export default async function ProductPage({ params }: Props) {
     ["Estado", CONDITION_LABEL[product.condition]],
   ];
 
+  const jsonLd = !product.isSample && !product.isOwner ? productJsonLd(product, (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "")) : null;
+
   return (
     <div className="mx-auto max-w-6xl space-y-12 px-4 py-6 md:py-10">
+      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />}
       <nav aria-label="Trilha" className="text-xs text-muted">
         <Link href="/" className="hover:underline">Início</Link> ›{" "}
         <Link href={`/buscar?categoria=${product.category.parent?.slug}`} className="hover:underline">{product.category.parent?.name}</Link> ›{" "}

@@ -9,6 +9,7 @@ import { STATUS_LABEL } from "@/features/products/constants";
 import { ListingActions } from "@/features/products/listing-actions";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { VerifyEmailBanner } from "@/features/auth/verify-email-banner";
 import { cn, formatBRL } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Meus anúncios", robots: { index: false } };
@@ -50,6 +51,7 @@ export default async function MyListingsPage({ searchParams }: { searchParams: P
         <h1 className="text-2xl font-extrabold">Meus anúncios</h1>
         <ButtonLink href="/vender" size="sm"><Plus className="size-4" /> Novo</ButtonLink>
       </div>
+      {!user.emailVerified && <VerifyEmailBanner email={user.email} />}
       {savedMessage && (
         <Alert tone="success">
           {savedMessage} {sp.status === "ACTIVE" && <Link href={`/produto/${sp.salvo}`} className="font-semibold underline">Ver anúncio</Link>}

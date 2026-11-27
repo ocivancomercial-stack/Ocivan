@@ -33,18 +33,19 @@ export const PRIVACY: LegalSection[] = [
   { title: "Quem somos", paragraphs: ["Este aviso explica como o Repassa Aí trata dados pessoais, nos termos da Lei Geral de Proteção de Dados (Lei nº 13.709/2018). Controlador e encarregado (DPO): a definir antes do lançamento."] },
   { title: "Dados que coletamos", paragraphs: [
     "Cadastro: nome, e-mail, telefone, cidade e senha (armazenada apenas como hash).",
+    "CPF: solicitado apenas para emitir etiquetas de envio (exigência das transportadoras). Nunca é exibido publicamente.",
     "Compras: endereço de entrega, histórico de pedidos e status de pagamento. Dados de cartão são tratados exclusivamente pelo provedor de pagamento.",
     "Uso: endereço IP, dispositivo e registros de acesso, para segurança e prevenção a fraudes (Marco Civil da Internet, art. 15)." ] },
   { title: "Para que usamos", paragraphs: [
     "Executar o contrato (cadastro, anúncios, pedidos, entregas), cumprir obrigações legais, prevenir fraudes e, com seu consentimento quando exigido, enviar comunicações." ] },
   { title: "Compartilhamento", paragraphs: [
-    "Compartilhamos o mínimo necessário com: provedor de pagamento, transportadoras/agregador de fretes (nome e endereço de entrega para o vendedor e a transportadora), provedores de hospedagem e e-mail.",
+    "Compartilhamos o mínimo necessário com: provedor de pagamento (Mercado Pago), agregador de fretes e transportadoras (Melhor Envio: nome, CPF e endereço de remetente e destinatário), provedores de hospedagem e e-mail. O vendedor vê o endereço de entrega apenas enquanto o pedido está pago e em envio.",
     "Seu endereço residencial nunca é exibido publicamente. Nos anúncios mostramos apenas a cidade aproximada.",
     "Assistente de anúncio (opcional): se você clicar em “Sugerir pela foto de capa”, essa foto é enviada, sem metadados de localização, a um provedor de inteligência artificial (Anthropic) apenas para gerar sugestões de texto." ] },
   { title: "Seus direitos", paragraphs: [
     "Você pode solicitar confirmação, acesso, correção, portabilidade, anonimização ou exclusão dos seus dados, além de revogar consentimentos, pela página Meus dados ou pelo e-mail de suporte." ] },
   { title: "Retenção e segurança", paragraphs: [
-    "Mantemos os dados pelo tempo necessário às finalidades e às obrigações legais (ex.: registros fiscais e de acesso). Aplicamos controles técnicos como criptografia em trânsito, hash de senhas e controle de acesso." ] },
+    "Mantemos os dados pelo tempo necessário às finalidades e às obrigações legais (ex.: registros de acesso por 6 meses — Marco Civil, art. 15; registros de pedidos pelo prazo fiscal e do CDC). Ao excluir a conta, os dados de contato são apagados e os pedidos concluídos ficam sem identificação direta. Aplicamos criptografia em trânsito, hash de senhas, cifragem de tokens e controle de acesso." ] },
 ];
 
 export const COOKIES: LegalSection[] = [

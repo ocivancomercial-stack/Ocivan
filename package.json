@@ -18,7 +18,9 @@
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
     "admin:promote": "tsx scripts/promote-admin.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "check": "npm run lint && npm run typecheck && npm test",
+    "icons": "tsx scripts/generate-icons.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.14.0",

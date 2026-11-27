@@ -6,7 +6,7 @@ import { isAPIError } from "better-auth/api";
 import { auth } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { safeRedirectPath } from "@/lib/safe-redirect";
-import { getClientIp } from "@/lib/session";
+import { getClientIp, getCurrentUser } from "@/lib/session";
 import { echoValues, formToObject, zodErrors } from "@/lib/form-data";
 import { logger } from "@/lib/logger";
 import { forgotPasswordSchema, resetPasswordSchema, signInSchema, signUpSchema } from "@/schemas/auth";
@@ -90,6 +90,17 @@ export async function resetPasswordAction(_prev: FormState, formData: FormData):
     return { message: "Link inválido ou expirado. Peça um novo link de redefinição." };
   }
   redirect("/entrar?senha=redefinida");
+}
+
+export async function resendVerificationAction() {
+  const user = await getCurrentUser();
+  if (!user || user.emailVerified) return;
+  if (!(await rateLimit(`verify:${user.id}`, { max: 3, windowSeconds: 600 })).allowed) return;
+  try {
+    await auth.api.sendVerificationEmail({ body: { email: user.email, callbackURL: "/vender" }, headers: await headers() });
+  } catch (error) {
+    logger.warn("auth.verify_resend_failed", { error: String(error) });
+  }
 }
 
 export async function signOutAction() {

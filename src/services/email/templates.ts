@@ -1,7 +1,7 @@
 const escape = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-function layout(title: string, body: string) {
+export function layout(title: string, body: string) {
   return `<!doctype html><html lang="pt-BR"><body style="margin:0;background:#F8F9F7;font-family:Arial,sans-serif;color:#202522">
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px">
 <table width="100%" style="max-width:520px;background:#fff;border-radius:16px;padding:32px">
@@ -22,5 +22,29 @@ export function resetPasswordEmail(name: string, url: string) {
 <p style="font-size:13px;color:#747C76">Se você não pediu, ignore este e-mail — sua senha continua a mesma.</p>`,
     ),
     text: `Olá! Para redefinir sua senha no Repassa Aí, acesse (válido por 1 hora): ${url}\nSe você não pediu, ignore este e-mail.`,
+  };
+}
+
+const appUrl = () => (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+
+function button(url: string, label: string) {
+  return `<p><a href="${escape(url)}" style="display:inline-block;background:#24845E;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none;font-weight:bold">${escape(label)}</a></p>`;
+}
+
+export function verifyEmailTemplate(name: string, url: string) {
+  return {
+    subject: "Confirme seu e-mail — Repassa Aí",
+    html: layout(`Bem-vindo(a), ${name.split(" ")[0]}!`, `<p>Confirme seu e-mail para começar a anunciar. O link vale por 24 horas.</p>${button(url, "Confirmar e-mail")}`),
+    text: `Confirme seu e-mail no Repassa Aí (válido por 24 horas): ${url}`,
+  };
+}
+
+/** E-mail transacional genérico de evento (pedido, anúncio). Sem dados sensíveis no corpo. */
+export function notificationEmail(name: string, title: string, message: string, link?: string) {
+  const url = link?.startsWith("/") ? `${appUrl()}${link}` : undefined;
+  return {
+    subject: `${title} — Repassa Aí`,
+    html: layout(title, `<p>Olá, ${escape(name.split(" ")[0])}!</p><p>${escape(message)}</p>${url ? button(url, "Ver no Repassa Aí") : ""}`),
+    text: `${title}\n\n${message}${url ? `\n\n${url}` : ""}`,
   };
 }

@@ -58,9 +58,24 @@ admin completo (usuários, anúncios, pedidos, pagamentos, denúncias, categoria
 `PaymentProvider` (Mercado Pago Marketplace: OAuth, checkout, split, webhooks, reembolso, chargeback) ·
 `ShippingProvider` (Melhor Envio: CEP, cotação, etiqueta, rastreio, cancelamento). Simulação clara em dev.
 
-## Etapa 6 — Finalização
+## Etapa 6 — Finalização ✅
+- PWA instalável: manifest, ícones (192/512/maskable/apple), service worker com página offline (sem cache de dados privados), atalhos Vender/Buscar/Pedidos.
+- SEO: sitemap (só anúncios reais ativos), robots por ambiente, JSON-LD de produto, canonical, imagem Open Graph.
+- Monitoramento: `instrumentation.ts` (onRequestError) + alerta opcional por webhook + `/api/health`.
+- E-mails transacionais (venda, pagamento, envio, entrega, reembolso, disputa, moderação) e confirmação de e-mail.
+- LGPD: exportação dos dados, exclusão de conta por anonimização, histórico de solicitações; política de privacidade atualizada (CPF, retenção).
+- CSP com nonce; verificação de e-mail para publicar.
+- 205 testes; `npm run check`.
+
+### Planejado originalmente para a Etapa 6
 PWA (manifest, service worker, instalação) · SEO (sitemap, metadados, dados estruturados) · monitoramento · CSP com nonce ·
 LGPD (exportação/exclusão) · testes E2E · checklist de deploy.
 
 ## Futuro (fora do MVP)
 Anúncios em destaque pagos, planos para brechós, vitrines patrocinadas, chat comprador–vendedor, apps nativos (reutilizando a API).
+
+## Pendências para o lançamento (dependem de você)
+1. Contas Mercado Pago (Marketplace habilitado) e Melhor Envio → homologação no sandbox oficial.
+2. Domínio, e-mail de suporte, conta Resend com domínio verificado, projeto Supabase (banco + storage), projeto Vercel.
+3. Revisão jurídica de termos, privacidade, reembolso e anúncios proibidos; definição de controlador/encarregado (DPO).
+4. Decidir: chave da API de IA (assistente de anúncio) e eventual pentest externo.
