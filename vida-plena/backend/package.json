@@ -4,12 +4,18 @@
   "description": "Backend do app de venda de seguro de vida (integração Tokio Marine em modo simulação)",
   "main": "src/server.js",
   "type": "commonjs",
-  "engines": { "node": ">=22.5" },
+  "engines": {
+    "node": ">=22.5"
+  },
   "scripts": {
     "start": "node --env-file-if-exists=.env src/server.js",
     "dev": "node --watch --env-file-if-exists=.env src/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "db:cifrar": "node --env-file-if-exists=.env scripts/cifrar-declaracoes.js"
   },
   "license": "UNLICENSED",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "pg": "8.23.1"
+  }
 }

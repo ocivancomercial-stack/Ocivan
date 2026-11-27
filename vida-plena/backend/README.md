@@ -6,13 +6,30 @@ A integração com a Tokio Marine e a cobrança no cartão estão em **modo simu
 
 ## Como rodar
 
-Precisa de Node.js 22.5 ou mais novo. Não há dependências para instalar.
+Precisa de Node.js 22.5 ou mais novo.
 
 ```bash
+npm install              # instala o driver do PostgreSQL (pg)
 cp .env.example .env     # ajuste os valores
 npm start                # app e API em http://localhost:3000
-npm test                 # roda os testes do fluxo completo
+npm test                 # roda os testes do fluxo completo (SQLite em memória)
 ```
+
+## Banco de dados
+
+- **Desenvolvimento:** sem `DATABASE_URL`, o servidor usa SQLite no arquivo `DB_PATH`. Não precisa instalar nada.
+- **Produção:** com `DATABASE_URL`, usa PostgreSQL. As tabelas são criadas na subida do servidor (`src/db/schema.postgres.sql`).
+  - Com `NODE_ENV=production`, o servidor só sobe com PostgreSQL e com a chave de criptografia.
+  - Valores em dinheiro ficam em `NUMERIC(12,2)`, datas da apólice em `DATE` e horários em UTC.
+- **Testes no PostgreSQL:** `TEST_DATABASE_URL=postgres://... npm test`. Os testes usam um schema temporário, apagado no fim; os dados existentes não são tocados.
+- O código usa uma interface única (`src/db/index.js`), então as rotas não mudam de um banco para o outro.
+
+## Declaração de saúde (LGPD)
+
+- É gravada **criptografada** (AES-256-GCM) com a chave `CHAVE_DADOS_SENSIVEIS`, que fica só no servidor.
+- Cada declaração fica presa à sua proposta: copiar o valor cifrado para outra proposta ou alterá-lo faz a leitura falhar.
+- **Guarde uma cópia da chave em local seguro.** Sem ela, as declarações gravadas não podem ser lidas.
+- Em desenvolvimento sem chave, a declaração é gravada em texto puro, com um aviso na subida. Para cifrar essas declarações depois: `npm run db:cifrar`.
 
 O servidor também serve o app (`../frontend`, ou a pasta em `FRONTEND_DIR`) na mesma origem da API, então não é preciso configurar CORS. Abra http://localhost:3000 e faça uma contratação: as chamadas aparecem no painel "Integração com a seguradora".
 
@@ -79,13 +96,18 @@ src/
   server.js                    servidor HTTP (API, arquivos do app, CORS, limite de corpo, JSON)
   app.js                       rotas e regras do fluxo
   config.js                    configuração, inclusive o percentual de comissão
-  db.js                        banco SQLite: clientes, cotações, propostas, pagamentos, comissões
+  db/index.js                  escolhe o banco (PostgreSQL com DATABASE_URL, senão SQLite) e define a interface
+  db/postgres.js               PostgreSQL (produção)
+  db/schema.postgres.sql       tabelas do PostgreSQL
+  db/sqlite.js                 SQLite (desenvolvimento e testes), com as tabelas
+  services/cripto.js           criptografia da declaração de saúde
   insurer/tokioMarine.mock.js  seguradora simulada
   insurer/tokioMarine.http.js  esqueleto da API real da Tokio (ajustar à documentação dela)
   payments/index.js            cobrança simulada (mock) e cobrança pela Tokio (tokio)
   services/comissao.js         regras do programa de comissão
   services/validacao.js        validação de CPF, idade, capitais e aceites
 test/fluxo.test.js             testes do fluxo inteiro
+scripts/cifrar-declaracoes.js  cifra declarações antigas gravadas em texto puro (npm run db:cifrar)
 ```
 
 ## Cartão de crédito
@@ -105,10 +127,9 @@ test/fluxo.test.js             testes do fluxo inteiro
    - Confirmar como a renovação é feita na API deles (rota, se o prêmio é recalculado pela idade e por qual índice ele é reajustado).
 2. **Cobrança pela Tokio:** ajustar `cobrar` e `estornar` em `tokioMarine.http.js` à documentação dela e usar `PAYMENTS=tokio` (junto com `INSURER=tokio`).
 3. **Banco e infraestrutura:**
-   - Trocar o SQLite por PostgreSQL.
+   - Criar o banco PostgreSQL gerenciado (com SSL) e definir `DATABASE_URL`, `CHAVE_DADOS_SENSIVEIS` e `NODE_ENV=production`.
    - Usar HTTPS.
-   - Fazer backup diário.
-   - Criptografar a declaração de saúde no banco, porque é dado sensível pela LGPD.
+   - Fazer backup diário do banco e guardar a chave de criptografia separada do backup.
 4. **Jurídico:**
    - Revisar os textos de aceite e a política de privacidade.
    - Confirmar com a seguradora ou uma assessoria se existe obrigação de informar a comissão ao cliente.

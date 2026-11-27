@@ -4,10 +4,10 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const config = require('./config');
-const db = require('./db').open(config.dbPath);
+const { abrirBanco } = require('./db');
 const insurer = require('./insurer')(config);
 const payments = require('./payments')(config, { insurer });
-const app = require('./app')({ config, db, insurer, payments });
+let app; // criado depois que o banco abre (veja iniciar())
 
 const LIMITE_CORPO = 100 * 1024;
 
@@ -74,6 +74,16 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(config.port, () => {
-  console.log(`App e API em http://localhost:${config.port} · seguradora=${insurer.nome} · pagamentos=${payments.nome} · comissão=${config.comissaoPercentual}%`);
-});
+async function iniciar() {
+  const db = await abrirBanco(config);
+  app = require('./app')({ config, db, insurer, payments });
+  server.listen(config.port, () => {
+    console.log(`App e API em http://localhost:${config.port} · banco=${db.dialeto} · seguradora=${insurer.nome} · pagamentos=${payments.nome} · comissão=${config.comissaoPercentual}%`);
+  });
+  // Desligamento limpo (deploy, reinício): para de aceitar conexões e fecha o banco.
+  const desligar = () => { server.close(() => db.fechar().finally(() => process.exit(0))); setTimeout(() => process.exit(1), 10_000).unref(); };
+  process.on('SIGTERM', desligar);
+  process.on('SIGINT', desligar);
+}
+
+iniciar().catch(e => { console.error('Falha ao iniciar:', e.message); process.exit(1); });

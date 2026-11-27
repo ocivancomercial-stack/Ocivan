@@ -5,7 +5,13 @@ const num = (v, d) => (v === undefined || v === '' ? d : Number(v));
 const config = {
   port: num(process.env.PORT, 3000),
   corsOrigins: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(s => s.trim()),
+  // Banco: com DATABASE_URL usa PostgreSQL (produção); sem ela, SQLite no arquivo DB_PATH (desenvolvimento).
+  databaseUrl: process.env.DATABASE_URL || '',
+  dbSchema: process.env.DB_SCHEMA || '',
   dbPath: process.env.DB_PATH || './data/vida-plena.db',
+  // Chave da criptografia de dados sensíveis (declaração de saúde). Obrigatória em produção.
+  chaveDadosSensiveis: process.env.CHAVE_DADOS_SENSIVEIS || '',
+  producao: process.env.NODE_ENV === 'production',
   // Pasta do app servido em http://localhost:PORT/ (mesma origem da API).
   frontendDir: process.env.FRONTEND_DIR || require('node:path').join(__dirname, '..', '..', 'frontend'),
   adminToken: process.env.ADMIN_TOKEN || '',
@@ -36,6 +42,14 @@ const config = {
 
 if (!(config.comissaoPercentual > 0 && config.comissaoPercentual < 100)) {
   throw new Error('COMISSAO_PERCENTUAL inválido: use um número entre 0 e 100');
+}
+
+if ((config.databaseUrl || config.producao) && !config.chaveDadosSensiveis) {
+  throw new Error('Defina CHAVE_DADOS_SENSIVEIS: em produção a declaração de saúde precisa ser gravada criptografada (LGPD)');
+}
+if (config.chaveDadosSensiveis) require('./services/cripto').lerChave(config.chaveDadosSensiveis); // valida o formato na subida
+if (config.producao && !config.databaseUrl) {
+  throw new Error('Em produção (NODE_ENV=production) use PostgreSQL: defina DATABASE_URL');
 }
 
 module.exports = config;

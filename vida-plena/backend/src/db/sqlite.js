@@ -1,5 +1,8 @@
 'use strict';
 
+// Banco SQLite: usado no desenvolvimento e nos testes (nada para instalar).
+// Em produção, use PostgreSQL (DATABASE_URL). A interface é a mesma: veja ./index.js.
+
 const fs = require('node:fs');
 const path = require('node:path');
 const { DatabaseSync } = require('node:sqlite');
@@ -89,14 +92,49 @@ CREATE INDEX IF NOT EXISTS idx_comissoes_status ON comissoes(status);
 CREATE INDEX IF NOT EXISTS idx_propostas_status ON propostas(status);
 `;
 
-function open(dbPath) {
+// Abre (e cria, se preciso) o banco SQLite e devolve a interface comum.
+function abrir(dbPath) {
   if (dbPath !== ':memory:') fs.mkdirSync(path.dirname(path.resolve(dbPath)), { recursive: true });
   const db = new DatabaseSync(dbPath);
   db.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;');
   db.exec(SCHEMA);
   migrar(db);
   db.exec('CREATE INDEX IF NOT EXISTS idx_propostas_vigencia ON propostas(vigencia_fim)');
-  return db;
+
+  const exec = {
+    get: (sql, args) => db.prepare(sql).get(...args),
+    all: (sql, args) => db.prepare(sql).all(...args),
+    run: (sql, args) => ({ changes: Number(db.prepare(sql).run(...args).changes) }),
+  };
+
+  // O SQLite tem uma conexão só. Enquanto uma transação está aberta, as outras
+  // operações esperam na fila, para não entrarem no meio dela.
+  let fila = Promise.resolve();
+  function naFila(fn) {
+    const anterior = fila;
+    let liberar;
+    fila = new Promise(r => { liberar = r; });
+    return anterior.then(fn).finally(liberar);
+  }
+  const semFila = {
+    get: async (sql, ...args) => exec.get(sql, args),
+    all: async (sql, ...args) => exec.all(sql, args),
+    run: async (sql, ...args) => exec.run(sql, args),
+  };
+
+  return {
+    dialeto: 'sqlite',
+    get: (sql, ...args) => naFila(() => exec.get(sql, args)),
+    all: (sql, ...args) => naFila(() => exec.all(sql, args)),
+    run: (sql, ...args) => naFila(() => exec.run(sql, args)),
+    tx: fn => naFila(async () => {
+      db.exec('BEGIN');
+      try { const r = await fn(semFila); db.exec('COMMIT'); return r; }
+      catch (e) { db.exec('ROLLBACK'); throw e; }
+    }),
+    mes: coluna => `strftime('%Y-%m', ${coluna})`,
+    fechar: async () => db.close(),
+  };
 }
 
 // Acrescenta colunas novas em bancos criados por versões anteriores.
@@ -109,11 +147,4 @@ function migrar(db) {
   for (const [nome, tipo] of novas) if (!cols.has(nome)) db.exec(`ALTER TABLE propostas ADD COLUMN ${nome} ${tipo}`);
 }
 
-// Executa fn dentro de uma transação.
-function tx(db, fn) {
-  db.exec('BEGIN');
-  try { const r = fn(); db.exec('COMMIT'); return r; }
-  catch (e) { db.exec('ROLLBACK'); throw e; }
-}
-
-module.exports = { open, tx };
+module.exports = { abrir };

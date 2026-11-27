@@ -3,9 +3,25 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const config = { ...require('../src/config'), comissaoPercentual: 30, adminToken: 'adm', webhookSecret: 'wh', insurer: 'mock', payments: 'mock' };
-const db = require('../src/db').open(':memory:');
-const app = require('../src/app')({ config, db, insurer: require('../src/insurer')(config), payments: require('../src/payments')(config, {}) });
+const { abrirBanco } = require('../src/db');
+const { criarCripto, contextoDeclaracao } = require('../src/services/cripto');
+
+// Por padrão, testa no SQLite em memória. Com TEST_DATABASE_URL, testa no PostgreSQL,
+// num schema temporário que é apagado no fim (os dados existentes não são tocados).
+const PG = process.env.TEST_DATABASE_URL || '';
+const SCHEMA = PG ? `teste_${process.pid}_${Date.now()}` : '';
+const CHAVE = Buffer.alloc(32, 7).toString('base64');
+const config = { ...require('../src/config'), comissaoPercentual: 30, adminToken: 'adm', webhookSecret: 'wh', insurer: 'mock', payments: 'mock',
+  chaveDadosSensiveis: CHAVE };
+let db, app;
+test.before(async () => {
+  db = await abrirBanco({ databaseUrl: PG, dbSchema: SCHEMA, dbPath: ':memory:' });
+  app = require('../src/app')({ config, db, insurer: require('../src/insurer')(config), payments: require('../src/payments')(config, {}) });
+});
+test.after(async () => {
+  if (PG) await db.run(`DROP SCHEMA ${SCHEMA} CASCADE`);
+  await db.fechar();
+});
 
 const call = (method, path, body, headers = {}, query = {}) => app.handle({ method, path, body, headers, query, ip: '127.0.0.1' });
 const ADM = { 'x-admin-token': 'adm' }, WH = { 'x-webhook-secret': 'wh' };
@@ -170,14 +186,52 @@ test('plano anual: cobrança de cada ano gera nova comissão de 30%', async () =
   assert.ok(cs.every(c => c.percentual === 30));
 });
 
-test('banco antigo recebe as colunas novas (migração)', () => {
+test('declaração de saúde gravada criptografada (LGPD)', async () => {
+  const [, cot] = await call('POST', '/api/cotacoes', cotacao);
+  const [, prop] = await call('POST', '/api/propostas', proposta(cot.idCotacao, { declaracaoSaude: [false, true, false, false] }));
+  const { declaracao_saude_json: gravado } = await db.get('SELECT declaracao_saude_json FROM propostas WHERE numero=?', prop.numeroProposta);
+  assert.match(gravado, /^enc:v1:/);
+  assert.ok(!gravado.includes('true'), 'nada da declaração aparece em texto puro');
+  const cripto = criarCripto(CHAVE);
+  assert.deepEqual(JSON.parse(cripto.decifrar(gravado, contextoDeclaracao(prop.numeroProposta))), [false, true, false, false]);
+  // Copiar o valor cifrado para outra proposta não funciona, nem alterar o texto cifrado
+  assert.throws(() => cripto.decifrar(gravado, contextoDeclaracao('PRP-OUTRA')));
+  const adulterado = gravado.slice(0, -4) + (gravado.endsWith('AAAA') ? 'BBBB' : 'AAAA');
+  assert.throws(() => cripto.decifrar(adulterado, contextoDeclaracao(prop.numeroProposta)));
+  assert.throws(() => criarCripto(CHAVE).decifrar(gravado, 'x'));
+  assert.throws(() => criarCripto('curta'), /32 bytes/);
+});
+
+test('filtros de data das comissões e resumo por mês', async () => {
+  const hojeStr = new Date().toISOString().slice(0, 10);
+  const [s1, doDia] = await call('GET', '/api/admin/comissoes', null, ADM, { de: hojeStr, ate: hojeStr });
+  assert.equal(s1, 200); assert.ok(doDia.length > 0);
+  const [, futuro] = await call('GET', '/api/admin/comissoes', null, ADM, { de: '2999-01-01' });
+  assert.equal(futuro.length, 0);
+  assert.equal((await call('GET', '/api/admin/comissoes', null, ADM, { de: '2026-02-31' }))[0], 422);
+  const [, r] = await call('GET', '/api/admin/comissoes/resumo', null, ADM);
+  assert.equal(r.porMes[0].mes, hojeStr.slice(0, 7));
+  assert.equal(typeof r.porMes[0].total, 'number');
+  assert.ok(r.porStatus.every(x => typeof x.quantidade === 'number' && typeof x.total === 'number'));
+});
+
+test('produção exige PostgreSQL e chave de criptografia', () => {
+  const { spawnSync } = require('node:child_process');
+  const rodar = env => spawnSync(process.execPath, ['-e', "require('./src/config')"], { cwd: __dirname + '/..', env: { PATH: process.env.PATH, ...env }, encoding: 'utf8' });
+  assert.match(rodar({ DATABASE_URL: 'postgres://x' }).stderr, /CHAVE_DADOS_SENSIVEIS/);
+  assert.match(rodar({ NODE_ENV: 'production', CHAVE_DADOS_SENSIVEIS: CHAVE }).stderr, /DATABASE_URL/);
+  assert.match(rodar({ CHAVE_DADOS_SENSIVEIS: 'curta' }).stderr, /32 bytes/);
+  assert.equal(rodar({ DATABASE_URL: 'postgres://x', CHAVE_DADOS_SENSIVEIS: CHAVE }).status, 0);
+});
+
+test('banco SQLite antigo recebe as colunas novas (migração)', async () => {
   const { DatabaseSync } = require('node:sqlite');
   const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
   const f = path.join(os.tmpdir(), `mig-${Date.now()}.db`);
   const velho = new DatabaseSync(f);
   velho.exec(`CREATE TABLE propostas (numero TEXT PRIMARY KEY, status TEXT)`); velho.close();
-  const novo = require('../src/db').open(f);
-  const cols = novo.prepare('PRAGMA table_info(propostas)').all().map(c => c.name);
+  const novo = require('../src/db/sqlite').abrir(f);
+  const cols = (await novo.all('PRAGMA table_info(propostas)')).map(c => c.name);
   assert.ok(['vigencia_inicio', 'vigencia_fim', 'renovacao_automatica', 'renovacoes'].every(c => cols.includes(c)));
-  novo.close(); fs.rmSync(f, { force: true }); fs.rmSync(f + '-wal', { force: true }); fs.rmSync(f + '-shm', { force: true });
+  await novo.fechar(); fs.rmSync(f, { force: true }); fs.rmSync(f + '-wal', { force: true }); fs.rmSync(f + '-shm', { force: true });
 });
