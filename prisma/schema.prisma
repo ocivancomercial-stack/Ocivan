@@ -1,0 +1,751 @@
+// Repassa Aí — schema do banco de dados (PostgreSQL + Prisma)
+// Convenções:
+//  - Valores monetários em CENTAVOS (Int) para evitar erros de ponto flutuante.
+//  - IDs em cuid() (texto) — não sequenciais, não expõem volume de dados.
+//  - Nomes de tabela em snake_case via @@map.
+//  - Nunca armazenamos dados de cartão. Tokens de provedores são cifrados (ver docs/SEGURANCA.md).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ─────────────────────────── Enums ───────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum ProductCondition {
+  NEW_WITH_TAGS // Novo com etiqueta
+  NEW_WITHOUT_TAGS // Novo sem etiqueta
+  EXCELLENT // Seminovo / excelente
+  GOOD // Bom, com sinais leves de uso
+  FAIR // Usado, com marcas de uso visíveis
+}
+
+enum ProductStatus {
+  DRAFT
+  IN_REVIEW
+  ACTIVE
+  RESERVED
+  SOLD
+  PAUSED
+  REMOVED
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CONVERTED // virou pedido pago
+  EXPIRED
+  RELEASED // liberada manualmente/cancelada
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  CANCELED
+  REFUNDED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  APPROVED
+  REJECTED
+  CANCELED
+  REFUNDED
+  CHARGED_BACK
+  IN_MEDIATION
+}
+
+enum ShippingStatus {
+  NOT_STARTED
+  QUOTED
+  LABEL_GENERATED
+  POSTED
+  IN_TRANSIT
+  DELIVERED
+  RETURNED
+  CANCELED
+}
+
+enum ReportStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+enum DisputeStatus {
+  OPEN
+  WAITING_SELLER
+  WAITING_BUYER
+  RESOLVED_BUYER
+  RESOLVED_SELLER
+  CLOSED
+}
+
+enum WebhookStatus {
+  RECEIVED
+  PROCESSED
+  IGNORED
+  FAILED
+}
+
+enum DataRequestType {
+  ACCESS // acesso/portabilidade (LGPD art. 18)
+  DELETION // exclusão de conta
+  CORRECTION
+}
+
+enum DataRequestStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  REJECTED
+}
+
+// ─────────────────────── Autenticação (Better Auth) ───────────────────────
+
+model User {
+  id              String     @id @default(cuid())
+  name            String
+  email           String     @unique
+  emailVerified   Boolean    @default(false)
+  avatar          String? // mapeado para "image" no Better Auth
+  phone           String?
+  // CPF (apenas dígitos) — exigido pelas transportadoras para emitir etiquetas. Nunca exibido publicamente.
+  cpf             String?
+  city            String?
+  state           String?    @default("PR")
+  role            Role       @default(USER)
+  status          UserStatus @default(ACTIVE)
+  termsAcceptedAt DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  sessions        Session[]
+  accounts        Account[]
+  addresses       Address[]
+  products        Product[]             @relation("SellerProducts")
+  favorites       Favorite[]
+  cartItems       CartItem[]
+  reservations    ProductReservation[]
+  purchases       Order[]               @relation("BuyerOrders")
+  sales           Order[]               @relation("SellerOrders")
+  reviewsWritten  Review[]              @relation("ReviewAuthor")
+  reviewsReceived Review[]              @relation("ReviewTarget")
+  reports         Report[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+  paymentAccount  SellerPaymentAccount?
+  disputesOpened  Dispute[]
+  dataRequests    DataRequest[]
+
+  @@index([role])
+  @@index([city])
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String? // hash (scrypt) — nunca texto puro
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+model RateLimit {
+  id          String @id @default(cuid())
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rate_limits")
+}
+
+// ─────────────────────────── Usuário ───────────────────────────
+
+model Address {
+  id           String   @id @default(cuid())
+  userId       String
+  label        String?
+  recipient    String?
+  postalCode   String
+  street       String
+  number       String
+  complement   String?
+  neighborhood String
+  city         String
+  state        String
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+// ─────────────────────────── Catálogo ───────────────────────────
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  parentId  String?
+  position  Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children Category[] @relation("CategoryTree")
+  products Product[]
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+model Brand {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+
+  @@map("brands")
+}
+
+model Product {
+  id                String           @id @default(cuid())
+  sellerId          String
+  categoryId        String
+  brandId           String?
+  title             String
+  description       String
+  defects           String?
+  size              String?
+  color             String?
+  condition         ProductCondition
+  priceCents        Int
+  status            ProductStatus    @default(DRAFT)
+  city              String
+  state             String           @default("PR")
+  // Coordenadas APROXIMADAS (centro do município), nunca o endereço do vendedor.
+  latitude          Float?
+  longitude         Float?
+  shippingAvailable Boolean          @default(true)
+  localPickup       Boolean          @default(false)
+  // Peso/dimensões padrão para cotação de frete
+  weightGrams       Int              @default(500)
+  isFeatured        Boolean          @default(false)
+  isSample          Boolean          @default(false) // dado fictício de demonstração (seed)
+  viewCount         Int              @default(0)
+  publishedAt       DateTime?
+  soldAt            DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  seller       User                 @relation("SellerProducts", fields: [sellerId], references: [id], onDelete: Restrict)
+  category     Category             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  brand        Brand?               @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  images       ProductImage[]
+  favorites    Favorite[]
+  cartItems    CartItem[]
+  reservations ProductReservation[]
+  orderItems   OrderItem[]
+  reports      Report[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([status, priceCents])
+  @@index([categoryId, status])
+  @@index([brandId, status])
+  @@index([sellerId, status])
+  @@index([city, status])
+  @@index([size])
+  @@index([condition])
+  @@map("products")
+}
+
+model ProductImage {
+  id         String   @id @default(cuid())
+  productId  String
+  // Chave do objeto no storage (ex.: products/<id>/<uuid>.webp). A URL pública é derivada.
+  storageKey String
+  imageUrl   String
+  position   Int      @default(0)
+  width      Int?
+  height     Int?
+  createdAt  DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, position])
+  @@map("product_images")
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([productId])
+  @@map("favorites")
+}
+
+// ─────────────────────── Carrinho e reservas ───────────────────────
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  quantity  Int      @default(1) // brechó: peças únicas — sempre 1 no MVP
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("cart_items")
+}
+
+// Reserva temporária do anúncio durante o checkout.
+model ProductReservation {
+  id        String            @id @default(cuid())
+  productId String
+  userId    String
+  orderId   String?
+  status    ReservationStatus @default(ACTIVE)
+  expiresAt DateTime
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([productId, status])
+  @@index([status, expiresAt])
+  @@map("product_reservations")
+}
+
+// ─────────────────────────── Pedidos ───────────────────────────
+
+model Order {
+  id                  String         @id @default(cuid())
+  code                String         @unique // código legível (ex.: RA-7K2M9Q)
+  buyerId             String
+  sellerId            String
+  addressId           String?
+  // Snapshot do endereço no momento da compra (o endereço pode mudar depois)
+  shippingAddress     Json?
+  subtotalCents       Int
+  shippingPriceCents  Int            @default(0)
+  discountCents       Int            @default(0)
+  platformFeeCents    Int
+  platformFeeBps      Int // comissão aplicada, em pontos-base (1200 = 12%)
+  totalCents          Int
+  couponId            String?
+  status              OrderStatus    @default(PENDING_PAYMENT)
+  paymentStatus       PaymentStatus  @default(PENDING)
+  shippingStatus      ShippingStatus @default(NOT_STARTED)
+  shippingServiceId   String?
+  shippingServiceName String?
+  // Prazo para pagar (= expiração da reserva). Depois disso o pedido é cancelado e a peça liberada.
+  expiresAt           DateTime?
+  paidAt              DateTime?
+  shippedAt           DateTime?
+  deliveredAt         DateTime?
+  canceledAt          DateTime?
+  cancelReason        String?
+  completedAt         DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  buyer        User                 @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Restrict)
+  seller       User                 @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
+  address      Address?             @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  coupon       Coupon?              @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  items        OrderItem[]
+  payments     Payment[]
+  shipments    Shipment[]
+  reviews      Review[]
+  reservations ProductReservation[]
+  disputes     Dispute[]
+
+  @@index([buyerId, createdAt(sort: Desc)])
+  @@index([sellerId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([status, expiresAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                   String  @id @default(cuid())
+  orderId              String
+  productId            String
+  productTitleSnapshot String
+  productImageSnapshot String?
+  unitPriceCents       Int
+  quantity             Int     @default(1)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model Payment {
+  id                   String        @id @default(cuid())
+  orderId              String
+  provider             String // "mercadopago" | "simulated"
+  providerPaymentId    String?
+  providerPreferenceId String?
+  status               PaymentStatus @default(PENDING)
+  statusDetail         String?
+  amountCents          Int
+  platformFeeCents     Int
+  sellerAmountCents    Int // estimativa ANTES das taxas do provedor
+  isSimulated          Boolean       @default(false)
+  rawLastPayload       Json?
+  approvedAt           DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerPaymentId])
+  @@index([orderId])
+  @@map("payments")
+}
+
+// Conta do vendedor no provedor de pagamento (ex.: OAuth Mercado Pago).
+model SellerPaymentAccount {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  provider        String
+  providerUserId  String
+  // Tokens cifrados com AES-256-GCM (ENCRYPTION_KEY). Nunca em texto puro.
+  accessTokenEnc  String
+  refreshTokenEnc String?
+  publicKey       String?
+  expiresAt       DateTime?
+  isSimulated     Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("seller_payment_accounts")
+}
+
+model Shipment {
+  id                 String         @id @default(cuid())
+  orderId            String
+  provider           String // "melhorenvio" | "simulated"
+  providerShipmentId String?
+  serviceName        String?
+  trackingCode       String?
+  labelUrl           String?
+  status             ShippingStatus @default(NOT_STARTED)
+  shippingPriceCents Int
+  isSimulated        Boolean        @default(false)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  order  Order           @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  events ShipmentEvent[]
+
+  @@index([orderId])
+  @@index([trackingCode])
+  @@map("shipments")
+}
+
+model ShipmentEvent {
+  id          String         @id @default(cuid())
+  shipmentId  String
+  status      ShippingStatus
+  description String?
+  occurredAt  DateTime       @default(now())
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId, occurredAt])
+  @@map("shipment_events")
+}
+
+model Review {
+  id             String   @id @default(cuid())
+  orderId        String
+  reviewerId     String
+  reviewedUserId String
+  rating         Int // 1..5 (validado na aplicação + CHECK na migration)
+  comment        String?
+  createdAt      DateTime @default(now())
+
+  order        Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  reviewer     User  @relation("ReviewAuthor", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewedUser User  @relation("ReviewTarget", fields: [reviewedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, reviewerId])
+  @@index([reviewedUserId])
+  @@map("reviews")
+}
+
+model Dispute {
+  id          String        @id @default(cuid())
+  orderId     String
+  openedById  String
+  reason      String
+  description String?
+  status      DisputeStatus @default(OPEN)
+  resolution  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  order    Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  openedBy User  @relation(fields: [openedById], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status])
+  @@map("disputes")
+}
+
+// ─────────────────────── Moderação e comunicação ───────────────────────
+
+model Report {
+  id          String       @id @default(cuid())
+  reporterId  String
+  productId   String
+  reason      String
+  description String?
+  status      ReportStatus @default(OPEN)
+  resolvedAt  DateTime?
+  createdAt   DateTime     @default(now())
+
+  reporter User    @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  product  Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([productId])
+  @@map("reports")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model Coupon {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  discountType  DiscountType
+  discountValue Int // PERCENT: pontos-base (1000 = 10%) | FIXED: centavos
+  minOrderCents Int          @default(0)
+  maxUses       Int?
+  usedCount     Int          @default(0)
+  expiresAt     DateTime?
+  active        Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  orders Order[]
+
+  @@map("coupons")
+}
+
+// ─────────────────────── Operação / infraestrutura ───────────────────────
+
+// Configurações da plataforma (chave/valor tipado em JSON). Ex.: platform_fee_bps, reservation_minutes.
+model PlatformSetting {
+  key       String   @id
+  value     Json
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+
+  @@map("platform_settings")
+}
+
+// Registro idempotente de webhooks recebidos.
+model WebhookEvent {
+  id          String        @id @default(cuid())
+  provider    String
+  // Identificador único do evento no provedor; garante idempotência.
+  eventKey    String
+  type        String?
+  resourceId  String?
+  payload     Json
+  status      WebhookStatus @default(RECEIVED)
+  error       String?
+  receivedAt  DateTime      @default(now())
+  processedAt DateTime?
+
+  @@unique([provider, eventKey])
+  @@index([status])
+  @@map("webhook_events")
+}
+
+// Trilha de auditoria para operações sensíveis.
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String // ex.: "product.update", "admin.user.suspend", "settings.fee.update"
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// Solicitações LGPD (acesso, exclusão, correção).
+model DataRequest {
+  id         String            @id @default(cuid())
+  userId     String
+  type       DataRequestType
+  status     DataRequestStatus @default(OPEN)
+  details    String?
+  createdAt  DateTime          @default(now())
+  resolvedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("data_requests")
+}
+
+// "Banco de dados" do provedor de pagamento SIMULADO (apenas desenvolvimento/homologação).
+// Mantido separado de `payments` para que a confirmação siga o mesmo caminho do provedor real:
+// webhook → consulta ao provedor → atualização do pedido.
+model SimulatedPayment {
+  id          String        @id @default(cuid())
+  externalRef String // id do pedido
+  amountCents Int
+  status      PaymentStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([externalRef])
+  @@map("simulated_payments")
+}
+
+// Credenciais de integrações da PLATAFORMA (ex.: conta Melhor Envio que compra as etiquetas).
+// Tokens cifrados com AES-256-GCM (ENCRYPTION_KEY).
+model IntegrationCredential {
+  provider        String    @id // "melhorenvio"
+  accessTokenEnc  String
+  refreshTokenEnc String?
+  expiresAt       DateTime?
+  scope           String?
+  connectedById   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("integration_credentials")
+}
+
+// Estado dos SIMULADORES de provedores (modelo de teste do Mercado Pago e do Melhor Envio).
+// Só usado com MOCK_PROVIDERS=1 fora de produção.
+model MockProviderRecord {
+  id        String   @id @default(cuid())
+  provider  String // "mercadopago" | "melhorenvio"
+  kind      String // "preference" | "payment" | "oauth_code" | "order" ...
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([provider, kind])
+  @@map("mock_provider_records")
+}
