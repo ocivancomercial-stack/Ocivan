@@ -18,6 +18,7 @@ describe("produção não aceita simuladores", () => {
   it("configuração oficial é aceita", () => expect(() => parseEnv(prod)).not.toThrow());
   it.each([
     [{ MOCK_PROVIDERS: "1" }, /Simuladores/],
+    [{ DEMO_MODE: "1" }, /Modo demonstração/],
     [{ MERCADOPAGO_API_URL: "http://localhost:3000/api/mock/mercadopago" }, /API oficial do Mercado Pago/],
     [{ MELHORENVIO_SANDBOX: "1" }, /sem sandbox/],
     [{ MERCADOPAGO_TEST_MODE: "1" }, /Modo de teste/],

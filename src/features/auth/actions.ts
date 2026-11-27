@@ -103,6 +103,17 @@ export async function resendVerificationAction() {
   }
 }
 
+/** DEMONSTRAÇÃO: confirma o e-mail sem precisar abrir a caixa de entrada. */
+export async function demoConfirmEmailAction() {
+  const { demoMode } = await import("@/lib/demo");
+  const user = await getCurrentUser();
+  if (!user || !demoMode()) return;
+  const { prisma } = await import("@/lib/db");
+  await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } });
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath("/vender");
+}
+
 export async function signOutAction() {
   await auth.api.signOut({ headers: await headers() });
   redirect("/");

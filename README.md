@@ -83,6 +83,9 @@ Os testes de integração exercitam a API HTTP real de autenticação e as restr
 
 ## Publicação
 
+**Demonstração grátis em ~30 min:** [docs/DEMONSTRACAO.md](docs/DEMONSTRACAO.md).
+
+
 Resumo: Vercel + PostgreSQL gerenciado + Supabase Storage + Resend. Passo a passo em [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Documentação

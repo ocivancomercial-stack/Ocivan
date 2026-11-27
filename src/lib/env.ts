@@ -25,6 +25,7 @@ const serverSchema = z
     PAYMENT_PROVIDER: z.enum(["simulated", "mercadopago"]).default("simulated"),
     SHIPPING_PROVIDER: z.enum(["simulated", "melhorenvio"]).default("simulated"),
     CRON_SECRET: z.string().optional(),
+    DEMO_MODE: z.enum(["", "0", "1"]).default(""),
     MOCK_PROVIDERS: z.enum(["", "0", "1"]).default(""),
     MERCADOPAGO_API_URL: z.string().url().optional(),
     MERCADOPAGO_AUTH_URL: z.string().url().optional(),
@@ -51,6 +52,7 @@ const serverSchema = z
         if (!env[k]) ctx.addIssue({ code: "custom", path: [k], message: `${k} obrigatória com SHIPPING_PROVIDER=melhorenvio` });
     if (env.APP_ENV !== "production") return;
     // Produção: nunca simuladores nem URLs que não sejam as oficiais.
+    if (env.DEMO_MODE === "1") ctx.addIssue({ code: "custom", path: ["DEMO_MODE"], message: "Modo demonstração é proibido em produção" });
     if (env.MOCK_PROVIDERS === "1") ctx.addIssue({ code: "custom", path: ["MOCK_PROVIDERS"], message: "Simuladores são proibidos em produção" });
     if (env.MERCADOPAGO_API_URL && env.MERCADOPAGO_API_URL.replace(/\/$/, "") !== "https://api.mercadopago.com")
       ctx.addIssue({ code: "custom", path: ["MERCADOPAGO_API_URL"], message: "Em produção use a API oficial do Mercado Pago" });

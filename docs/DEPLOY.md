@@ -36,7 +36,7 @@ Rode `db:deploy` antes de promover cada deploy que traga migrations (no CI ou ma
 ## 4. Publicação
 
 1. `git push` → a Vercel compila (`npm run build` já executa `prisma generate`).
-2. `vercel.json` agenda `/api/cron/release-reservations` a cada 5 minutos (exige `CRON_SECRET`).
+2. `vercel.json` agenda `/api/cron/release-reservations` 1x/dia (limite do plano gratuito). No plano Pro, troque para `*/5 * * * *`. Reservas vencidas também são liberadas a cada checkout e ao abrir o produto.
 3. Configure um monitor externo para `GET /api/health` (200 = ok, 503 = banco indisponível).
 4. Opcional: `ERROR_ALERT_WEBHOOK_URL` para alertas de erro; Log Drain da Vercel para retenção de logs.
 

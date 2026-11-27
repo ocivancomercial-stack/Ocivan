@@ -164,6 +164,11 @@ export async function getProductForPage(id: string, viewerId: string | null) {
     },
   });
   if (!product) return null;
+  if (product.status === "RESERVED") {
+    // Libera reservas vencidas sob demanda (o cron do plano gratuito da Vercel roda só 1x/dia).
+    const { releaseExpiredReservations } = await import("@/features/orders/service");
+    if ((await releaseExpiredReservations()) > 0) return getProductForPage(id, viewerId);
+  }
   const isOwner = viewerId === product.sellerId;
   if (!PUBLIC_STATUSES.includes(product.status) && !isOwner) return null;
 
